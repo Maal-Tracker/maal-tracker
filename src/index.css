@@ -1,0 +1,397 @@
+/* GLOBAL RESETS AND FONT IMPORT */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #f8f8f8;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 1. NAVBAR STYLES (HEADER DESIGN) - DESIGN-KA SAXDA AH EE NADIIFKA AH */
+/* ---------------------------------------------------------------------- */
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 80px; /* Spacing weyn sida design-ka */
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    z-index: 1000; /* U keenta sare */
+    position: sticky; /* Wuxuu ku dhegayaa meesha sare */
+    top: 0;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.nav-links {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    flex-grow: 1; /* U ogolaanaya inuu fido meel bannaan */
+    justify-content: center; /* Links-ka wuxuu dhigayaa dhexda (Desktop-ka) */
+}
+
+.nav-links span {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.nav-links span:hover {
+    color: #FFD600;
+}
+
+/* Button-ka Login/SignOut-ka ee Madow */
+.btn-login {
+    background-color: #000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* Wuxuu ka hortagayaa inuu jabo */
+}
+
+.btn-login:hover {
+    background-color: #333;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 2. LANDING PAGE SECTIONS (HERO, FEATURES) */
+/* ---------------------------------------------------------------------- */
+
+.hero-section {
+    padding: 100px 20px;
+    text-align: center;
+    background-color: #fff;
+}
+
+.hero-title {
+    font-size: 55px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #222;
+    margin-bottom: 20px;
+}
+
+.hero-subtitle {
+    font-size: 18px;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto 40px;
+}
+
+.btn-hero {
+    padding: 15px 35px;
+    border: none;
+    font-weight: 700;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    min-width: 150px;
+}
+
+.btn-hero:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.btn-yellow {
+    background-color: #FFD600;
+    color: #000;
+}
+
+.btn-black {
+    background-color: #000;
+    color: #fff;
+}
+
+/* Features Section */
+.features-section, .how-it-works, .dashboard-container {
+    padding: 80px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-size: 36px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #222;
+}
+
+.section-sub {
+    font-size: 16px;
+    color: #777;
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+/* Feature Grid */
+.feature-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.feature-row {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.feature-row.row-right {
+    justify-content: flex-end;
+}
+
+.feature-box {
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    max-width: 300px;
+    text-align: center;
+    font-size: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.box-pink {
+    background-color: #fff0f5; /* Light Pink */
+    color: #a020f0; /* Purple Text */
+}
+
+.box-gray {
+    background-color: #f0f0f0; /* Light Gray */
+    color: #333;
+}
+
+/* How It Works */
+.step-item {
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.step-title {
+    font-weight: 600;
+    font-size: 18px;
+    display: block;
+    color: #222;
+}
+
+.step-desc {
+    color: #777;
+    font-size: 14px;
+    display: block;
+}
+
+/* Testimonials */
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.testimonial-card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: left;
+}
+
+.quote-mark {
+    font-size: 30px;
+    font-style: italic;
+    color: #FFD600;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 3. AUTH/LOGIN FORM STYLES */
+/* ---------------------------------------------------------------------- */
+.container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.auth-header {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.auth-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #FFD600;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.auth-form button:hover {
+    background-color: #ffc400;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 4. FOOTER STYLES */
+/* ---------------------------------------------------------------------- */
+.footer {
+    background-color: #333;
+    color: #ccc;
+    padding: 40px 80px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.footer-links {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.footer-links span {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.footer-links span:hover {
+    color: #fff;
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* 5. RESPONSIVENESS (MOBILE STYLES) - Xaqiijinayo in mobile-ka sax yahay */
+/* ---------------------------------------------------------------------- */
+
+/* Kalo soocida Badhamada: */
+.mobile-only-btn {
+    display: none; /* Qari inta aan mobile lagu jirin */
+}
+
+.desktop-only-btn {
+    display: block; /* Muuji inta lagu jiro desktop-ka */
+}
+
+.hamburger {
+    display: none; /* Qari inta aan mobile lagu jirin */
+}
+
+@media (max-width: 900px) {
+    .hero-title {
+        font-size: 40px;
+    }
+    .navbar-container, .footer {
+        padding: 20px 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-container { padding: 20px; }
+    
+    /* Links-ka wuxuu noqonayaa mid la isku duubo (Mobile Menu) */
+    .nav-links {
+        display: none; 
+        flex-direction: column;
+        align-items: flex-start;
+        position: absolute;
+        top: 70px;
+        left: 0; /* Ka dhig si ay uga bilaabato bidixda shaashadda */
+        background: white;
+        width: 100%;
+        padding: 10px 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 100;
+        gap: 0;
+    }
+    
+    .nav-links.open {
+        display: flex;
+    }
+
+    .hamburger {
+        display: block !important; /* Muuji Hamburger Icon */
+        font-size: 28px;
+        cursor: pointer;
+        order: 3; /* U dir dhinaca midigta, button-ka Login-ka dhinaca bidixda u dhow */
+    }
+
+    .nav-links span {
+        display: block;
+        padding: 15px 0;
+        border-bottom: 1px solid #eee;
+        width: 100%;
+    }
+    
+    /* Muuji badhanka Mobile-ka oo qari kan Desktop-ka */
+    .mobile-only-btn {
+        display: block;
+        padding: 10px 0;
+        width: 100%;
+        text-align: center;
+    }
+
+    .desktop-only-btn {
+        display: none;
+    }
+    
+    /* Features & Hero Section hagaajin */
+    .hero-section {
+        padding: 60px 10px;
+    }
+    .hero-title {
+        font-size: 30px;
+    }
+    .features-section, .how-it-works, .dashboard-container {
+        padding: 60px 20px;
+    }
+    .feature-row.row-right, .feature-row.row-left {
+        justify-content: center;
+    }
+    .footer-links {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
