@@ -1,75 +1,104 @@
 // src/components/TransactionForm.jsx
 import { useState } from 'react';
-import { supabase } from '../supabaseClient';
 
-export default function TransactionForm({ session, onTransactionInsert, isGuest, onBack }) {
+export default function TransactionForm({ onTransactionInsert, isGuest }) {
   const [amount, setAmount] = useState('');
+  const [type, setType] = useState('Income'); // Default Income
   const [description, setDescription] = useState('');
-  const [transactionType, setTransactionType] = useState('Income');
-  const [transaction_date, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
-  const [loading, setLoading] = useState(false);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]); 
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setLoading(true);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!amount) return;
 
-    const transactionData = {
-        // UserID logic here...
-        amount: parseFloat(amount),
-        description,
-        transaction_type: transactionType,
-        transaction_date,
+    const newTransaction = {
+      transaction_type: type,
+      amount: parseFloat(amount),
+      description,
+      transaction_date: date,
     };
-    
-    // Logic-ga keydinta (Guest vs User) - Waan soo gaabiyay si aan diirada u saaro designka
-    if (isGuest) {
-        const newId = Date.now();
-        onTransactionInsert({...transactionData, id: newId});
-    } else {
-         const { data, error } = await supabase.from('transactions').insert([{...transactionData, user_id: session.user.id}]).select();
-         if (!error) onTransactionInsert(data[0]);
-    }
-    setLoading(false);
-    setAmount(''); setDescription('');
+
+    onTransactionInsert(newTransaction);
+    setAmount('');
+    setDescription('');
   };
 
   return (
-    <div className="form-card">
-      {/* Header oo leh Back Button */}
-      <div className="form-header">
-        <button onClick={onBack} className="back-btn">Back</button>
-        <h3>Add New Transaction</h3>
-      </div>
-
+    <div className="transaction-card">
+      <h3 className="form-title">Add New Transaction</h3>
+      
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-            {/* Type Radio */}
-            <div>
-                <label style={{marginBottom: '10px', display:'block'}}>Type</label>
-                <div className="radio-group">
-                    <label style={{color: 'var(--primary-color)', fontWeight:'bold'}}><input type="radio" name="type" value="Income" checked={transactionType === 'Income'} onChange={(e) => setTransactionType(e.target.value)} /> Income</label>
-                    <label><input type="radio" name="type" value="Expense" checked={transactionType === 'Expense'} onChange={(e) => setTransactionType(e.target.value)} /> Expense</label>
-                </div>
+        
+        {/* Row 1: Type Selection */}
+        <div style={{marginBottom: '20px'}}>
+            <label style={{display:'block', marginBottom:'10px', fontWeight:'600', color:'#555'}}>Transaction Type</label>
+            <div className="type-selector">
+                <label className="radio-label">
+                    <input 
+                        type="radio" 
+                        name="type" 
+                        value="Income" 
+                        checked={type === 'Income'} 
+                        onChange={(e) => setType(e.target.value)} 
+                    />
+                    <span style={{color: '#28a745'}}>Income (Money In)</span>
+                </label>
+                <label className="radio-label">
+                    <input 
+                        type="radio" 
+                        name="type" 
+                        value="Expense" 
+                        checked={type === 'Expense'} 
+                        onChange={(e) => setType(e.target.value)} 
+                    />
+                    <span style={{color: '#dc3545'}}>Expense (Money Out)</span>
+                </label>
             </div>
-            {/* Amount */}
-            <div>
-                <label style={{marginBottom: '10px', display:'block'}}>Amount</label>
-                <input type="number" className="input-field" style={{width: '120px'}} value={amount} onChange={(e) => setAmount(e.target.value)} required />
+        </div>
+
+        {/* Row 2: Grid Layout for Inputs */}
+        <div className="form-grid">
+            <div className="input-wrapper">
+                <label>Amount ($)</label>
+                <input 
+                    type="number" 
+                    className="modern-input" 
+                    placeholder="e.g. 50" 
+                    value={amount} 
+                    onChange={(e) => setAmount(e.target.value)} 
+                    required 
+                />
+            </div>
+            
+            <div className="input-wrapper">
+                <label>Date</label>
+                <input 
+                    type="date" 
+                    className="modern-input" 
+                    value={date} 
+                    onChange={(e) => setDate(e.target.value)} 
+                    required 
+                />
             </div>
         </div>
 
-        <div className="input-group">
-            <input type="text" className="input-field" placeholder="Description (Optional)" style={{height: '80px'}} value={description} onChange={(e) => setDescription(e.target.value)} />
+        {/* Row 3: Description */}
+        <div className="input-wrapper" style={{marginBottom: '20px'}}>
+            <label>Description (Optional)</label>
+            <input 
+                type="text" 
+                className="modern-input" 
+                placeholder="What is this for?" 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+            />
         </div>
 
-        <div className="input-group">
-            <label>Date:</label>
-            <input type="date" className="input-field" style={{width: '150px'}} value={transaction_date} onChange={(e) => setTransactionDate(e.target.value)} required />
-        </div>
-
-        <button type="submit" disabled={loading} className="btn btn-primary" style={{width: '100%'}}>
-            {loading ? 'Adding...' : 'Add'}
+        {/* Add Button */}
+        <button type="submit" className="add-btn">
+            + Add Transaction
         </button>
+
       </form>
     </div>
   );
