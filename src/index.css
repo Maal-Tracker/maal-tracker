@@ -1,22 +1,39 @@
 /* src/index.css */
 
-/* 1. GLOBAL IMPORTS & RESETS */
+/* GLOBAL IMPORTS */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
+/* --- THEME VARIABLES --- */
 :root {
-  /* Color Palette */
-  --primary-yellow: #FFD600;  /* Brand Color */
+  /* LIGHT MODE (Default) */
+  --bg-body: #FFFFFF;
+  --bg-secondary: #F8F9FA; /* Footer & Backgrounds */
+  --bg-card: #FFFFFF;
+  --text-main: #222222;
+  --text-muted: #666666;
+  --primary-yellow: #FFD600;
   --primary-black: #000000;
-  --text-dark: #222222;
-  --text-gray: #666666;
-  --bg-body: #F8F9FA;         /* Light Gray Background for Dashboard */
-  --bg-white: #FFFFFF;
   --border-color: #E5E5E5;
-  
-  /* Spacing & Shadows */
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --radius: 12px;
+  --input-bg: #FAFAFA;
+  --box-pink: #FFF0F5;
+  --box-gray: #F3F3F3;
+  --shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+[data-theme='dark'] {
+  /* DARK MODE */
+  --bg-body: #121212;
+  --bg-secondary: #1E1E1E;
+  --bg-card: #1E1E1E;
+  --text-main: #E0E0E0;
+  --text-muted: #A0A0A0;
+  --primary-yellow: #FFD600; /* Jaalaha wuu sii jirayaa */
+  --primary-black: #FFFFFF;  /* Madowgii wuxuu noqonayaa Cadaan */
+  --border-color: #333333;
+  --input-bg: #2C2C2C;
+  --box-pink: #331D25; /* Darker Pink */
+  --box-gray: #252525;
+  --shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
 * {
@@ -27,10 +44,10 @@
 
 body {
   font-family: 'Poppins', sans-serif;
-  background-color: var(--bg-white);
-  color: var(--text-dark);
+  background-color: var(--bg-body);
+  color: var(--text-main);
   line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 button {
@@ -38,18 +55,19 @@ button {
 }
 
 /* ---------------------------------------------------------------------- */
-/* 2. NAVBAR (HEADER) STYLES */
+/* 2. NAVBAR STYLES */
 /* ---------------------------------------------------------------------- */
 .navbar-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 80px;
-  background: var(--bg-white);
+  background: var(--bg-card);
   position: sticky;
   top: 0;
   z-index: 1000;
   border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease;
 }
 
 .nav-logo {
@@ -57,7 +75,7 @@ button {
   align-items: center;
   font-weight: 700;
   font-size: 22px;
-  color: var(--primary-black);
+  color: var(--text-main);
   cursor: pointer;
 }
 
@@ -69,7 +87,7 @@ button {
 
 .nav-links span {
   cursor: pointer;
-  color: var(--text-dark);
+  color: var(--text-main);
   font-weight: 500;
   transition: color 0.2s ease;
 }
@@ -78,10 +96,10 @@ button {
   color: var(--primary-yellow);
 }
 
-/* Badhanka Login-ka Madow */
+/* Badhanka Login (Wuxuu qaataa Primary Black variable - Light:Black, Dark:White) */
 .btn-login {
-  background-color: var(--primary-black);
-  color: white;
+  background-color: var(--text-main); /* Reverse logic for better contrast */
+  color: var(--bg-body);
   padding: 10px 25px;
   border-radius: 6px;
   border: none;
@@ -90,8 +108,22 @@ button {
   transition: background-color 0.3s ease;
 }
 
-.btn-login:hover {
-  background-color: #333;
+/* Theme Toggle Button */
+.theme-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+.theme-btn:hover {
+    background-color: var(--bg-secondary);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -109,12 +141,12 @@ button {
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 20px;
-  color: var(--primary-black);
+  color: var(--text-main);
 }
 
 .hero-subtitle {
   font-size: 18px;
-  color: var(--text-gray);
+  color: var(--text-muted);
   margin-bottom: 40px;
   max-width: 600px;
   margin-left: auto;
@@ -136,10 +168,10 @@ button {
   transform: translateY(-3px);
 }
 
-.btn-yellow { background-color: var(--primary-yellow); color: black; }
-.btn-black { background-color: var(--primary-black); color: white; }
+.btn-yellow { background-color: var(--primary-yellow); color: black; } /* Always Black text on Yellow */
+.btn-black { background-color: var(--text-main); color: var(--bg-body); }
 
-/* Why Choose Us & How It Works */
+/* Features & How It Works */
 .features-section, .how-it-works {
   padding: 80px 40px;
   max-width: 1200px;
@@ -151,15 +183,15 @@ button {
   font-weight: 700;
   text-align: center;
   margin-bottom: 40px;
+  color: var(--text-main);
 }
 
 .section-sub {
   text-align: center;
-  color: var(--text-gray);
+  color: var(--text-muted);
   margin-bottom: 60px;
 }
 
-/* Grid Layouts */
 .feature-grid {
   display: flex;
   flex-direction: column;
@@ -179,10 +211,28 @@ button {
   font-size: 16px;
   min-width: 280px;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 
-.box-pink { background-color: #FFF0F5; color: #D63384; }
-.box-gray { background-color: #F3F3F3; color: #333; }
+.box-pink { background-color: var(--box-pink); color: var(--text-main); }
+.box-gray { background-color: var(--box-gray); color: var(--text-main); }
+
+.step-item {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 18px;
+  display: block;
+  color: var(--text-main);
+}
+
+.step-desc {
+  color: var(--text-muted);
+  font-size: 14px;
+}
 
 /* Testimonials */
 .testimonials-grid {
@@ -193,24 +243,23 @@ button {
 }
 
 .testimonial-card {
-  background: white;
+  background: var(--bg-card);
   padding: 30px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
+  border-radius: 12px;
   text-align: left;
+  box-shadow: var(--shadow);
 }
 
 /* ---------------------------------------------------------------------- */
-/* 4. DASHBOARD & TRANSACTION FORM STYLES (CLEAN DESIGN) */
+/* 4. DASHBOARD & TRANSACTION FORM STYLES */
 /* ---------------------------------------------------------------------- */
 .dashboard-container {
   max-width: 900px;
   margin: 40px auto;
   padding: 0 20px;
-  background-color: var(--bg-white);
 }
 
-/* Dashboard Header */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -221,18 +270,19 @@ button {
 }
 
 .back-menu-btn {
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  color: var(--text-main);
   transition: all 0.2s;
 }
-.back-menu-btn:hover { background: #f5f5f5; border-color: #ccc; }
+.back-menu-btn:hover { background: var(--bg-secondary); }
 
 .view-toggle {
-  background: #F0F0F0;
+  background: var(--bg-secondary);
   padding: 4px;
   border-radius: 8px;
   display: flex;
@@ -246,22 +296,21 @@ button {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .toggle-btn.active {
-  background: var(--primary-black);
-  color: white;
-  box-shadow: var(--shadow-sm);
+  background: var(--primary-black); /* Variable changes based on mode */
+  color: var(--bg-body);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Transaction Form Card */
 .transaction-card {
-  background: white;
+  background: var(--bg-card);
   padding: 40px;
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow);
   margin-bottom: 40px;
 }
 
@@ -269,10 +318,9 @@ button {
   font-size: 22px;
   font-weight: 700;
   margin-bottom: 30px;
-  color: var(--primary-black);
+  color: var(--text-main);
 }
 
-/* Form Grid Layout */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -280,34 +328,30 @@ button {
   margin-bottom: 20px;
 }
 
-.input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .input-wrapper label {
   font-size: 14px;
   font-weight: 600;
-  color: #555;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  display: block;
 }
 
 .modern-input {
   padding: 12px 15px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.3s;
-  background-color: #FAFAFA;
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  width: 100%;
 }
 
 .modern-input:focus {
   border-color: var(--primary-yellow);
-  background-color: #fff;
   outline: none;
 }
 
-/* Type Selector (Radio) */
 .type-selector {
   display: flex;
   gap: 20px;
@@ -321,77 +365,62 @@ button {
   cursor: pointer;
   font-weight: 500;
   padding: 10px 15px;
-  background: #FAFAFA;
-  border: 1px solid #ddd;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
+  color: var(--text-main);
 }
 
-.radio-label input {
-  accent-color: var(--primary-yellow);
-  width: 16px;
-  height: 16px;
-}
-
-/* Add Button */
 .add-btn {
   width: 100%;
   padding: 14px;
   background-color: var(--primary-yellow);
-  color: var(--primary-black);
+  color: black;
   border: none;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   margin-top: 10px;
-  transition: background-color 0.2s;
 }
 
-.add-btn:hover {
-  background-color: #FFC400;
-}
-
-/* Analysis Section Styles */
-.analysis-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-/* Transaction History Table */
+/* History Table */
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 15px; color: #666; font-weight: 600; border-bottom: 2px solid #eee; }
-td { padding: 15px; border-bottom: 1px solid #f5f5f5; color: #333; }
+th { text-align: left; padding: 15px; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border-color); }
+td { padding: 15px; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
 
 /* ---------------------------------------------------------------------- */
-/* 5. FOOTER STYLES */
+/* 5. FOOTER & AUTH */
 /* ---------------------------------------------------------------------- */
 .footer {
-  background-color: #F1F1F1;
+  background-color: var(--bg-secondary);
   padding: 60px 20px;
   text-align: center;
   margin-top: 60px;
+  color: var(--text-muted);
 }
 
 .footer-links {
   margin-bottom: 15px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-main);
+}
+
+.container {
+    background-color: var(--bg-card);
+    color: var(--text-main);
 }
 
 /* ---------------------------------------------------------------------- */
-/* 6. RESPONSIVE DESIGN (MOBILE) */
+/* 6. RESPONSIVE DESIGN */
 /* ---------------------------------------------------------------------- */
-
-/* Helper classes for Mobile/Desktop visibility */
 .mobile-only-btn { display: none; }
 .desktop-only-btn { display: block; }
-.hamburger { display: none; font-size: 24px; cursor: pointer; }
+.hamburger { display: none; font-size: 24px; cursor: pointer; color: var(--text-main); }
 
 @media (max-width: 768px) {
   .navbar-container { padding: 15px 20px; }
   
-  /* Mobile Menu */
   .nav-links {
     display: none;
     flex-direction: column;
@@ -399,10 +428,10 @@ td { padding: 15px; border-bottom: 1px solid #f5f5f5; color: #333; }
     top: 60px;
     left: 0;
     width: 100%;
-    background: white;
+    background: var(--bg-card);
     padding: 20px;
-    box-shadow: var(--shadow-md);
-    border-bottom: 1px solid #eee;
+    box-shadow: var(--shadow);
+    border-bottom: 1px solid var(--border-color);
   }
   
   .nav-links.open { display: flex; }
@@ -412,13 +441,9 @@ td { padding: 15px; border-bottom: 1px solid #f5f5f5; color: #333; }
   .mobile-only-btn { display: block; width: 100%; margin-top: 15px; }
   .mobile-only-btn button { width: 100%; }
 
-  /* Landing Page Mobile */
   .hero-title { font-size: 36px; }
   .feature-row.row-left, .feature-row.row-right { justify-content: center; }
-  
-  /* Dashboard Mobile */
   .form-grid { grid-template-columns: 1fr; }
-  .type-selector { flex-direction: column; }
   .dashboard-header { flex-direction: column; align-items: stretch; gap: 15px; }
   .view-toggle { justify-content: center; }
 }

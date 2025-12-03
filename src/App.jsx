@@ -4,69 +4,85 @@ import { supabase } from './supabaseClient';
 import Auth from './components/Auth';
 import Account from './components/Account';
 import LandingPage from './components/LandingPage';
-import Navbar from './components/Navbar'; // New Navbar
+import Navbar from './components/Navbar';
 import About from './components/About';
 import Contact from './components/Contact';
 
 export default function App() {
   const [session, setSession] = useState(null);
-  // views: 'landing', 'daily', 'plan', 'about', 'contact', 'auth'
   const [view, setView] = useState('landing'); 
-  const [theme, setTheme] = useState('light'); // light or dark
+  const [targetFeature, setTargetFeature] = useState('daily'); 
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  
+  // 1. Theme State (Default: light)
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    // Theme Setup
+    // 2. Apply Theme to <html> tag
     document.documentElement.setAttribute('data-theme', theme);
     
-    // Auth Listener
+    // Auth Check
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) {
+        setView('landing');
+        setIsGuestMode(false);
+      }
+    });
     return () => subscription.unsubscribe();
-  }, [theme]);
+  }, [theme]); // Re-run when theme changes
 
-  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  // 3. Toggle Function
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
 
-  // Main Content Renderer
+  // Feature Handling
+  const handleFeatureClick = (feature) => {
+      setTargetFeature(feature);
+      if (session) {
+          setIsGuestMode(false);
+          setView('dashboard');
+      } else {
+          setIsGuestMode(true);
+          setView('dashboard');
+      }
+  };
+
   const renderContent = () => {
     switch(view) {
-        case 'landing': return <LandingPage onNavigate={setView} />;
+        case 'landing': return <LandingPage onNavigate={handleFeatureClick} />;
         case 'about': return <About />;
         case 'contact': return <Contact />;
-        case 'auth': return <Auth />;
-        case 'daily': 
-        case 'plan': 
-            // Account handles both Daily and Plan internally based on initialView prop
-            // Waxaan u gudbinaynaa 'view' si Account u ogaado midka la furayo
-            return <Account 
-                key={session ? session.user.id : 'guest'} // Reset on login/out
-                session={session} 
-                isGuest={!session} 
-                initialView={view} 
-                onBackToHome={() => setView('landing')} 
-            />;
-        default: return <LandingPage onNavigate={setView} />;
+        case 'auth': return <div className="container" style={{marginTop:'50px', maxWidth:'400px', margin:'50px auto', padding:'20px', borderRadius:'8px'}}><Auth /></div>;
+        case 'dashboard': return <Account key={session ? session.user.id : 'guest'} session={session} isGuest={isGuestMode} initialView={targetFeature} onBackToHome={() => setView('landing')} onGoToLogin={() => setView('auth')} />;
+        default: return <LandingPage onNavigate={handleFeatureClick} />;
     }
   };
 
   return (
     <div>
-        {/* Global Navbar */}
+        {/* Pass Theme Props to Navbar */}
         <Navbar 
             onNavigate={setView} 
             isLoggedIn={!!session} 
-            onSignOut={() => { supabase.auth.signOut(); setView('landing'); }}
+            onSignOut={() => supabase.auth.signOut()}
             onSignIn={() => setView('auth')}
             theme={theme}
             toggleTheme={toggleTheme}
         />
         
-        {/* Page Content */}
         {renderContent()}
 
-        {/* Global Footer (waxaad ka saari kartaa landing page footer-ka si aysan u noqon laba) */}
-        <footer style={{ textAlign: 'center', padding: '20px', fontSize: '12px', color: '#888' }}>
-            &copy; 2025 Maal Tracker
-        </footer>
+        {view !== 'dashboard' && view !== 'auth' && (
+            <footer className="footer">
+                <div className="footer-links">
+                    <span>Home</span> • <span>About</span> • <span>Contact Support</span> • <span>Privacy Policy</span>
+                </div>
+                <div>© 2025 Maal Tracker — All rights reserved.</div>
+            </footer>
+        )}
     </div>
   );
 }

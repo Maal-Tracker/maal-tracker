@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import TransactionForm from './TransactionForm'; 
 import Plan from './Plan'; 
 import Analysis from './Analysis'; 
-import EditTransactionModal from './EditTransactionModal'; 
+import EditTransactionModal from './EditTransactionModal'; // Hadda ma isticmaalno, laakiin waa inuu ku jiraa haddii aad u baahato
 
 export default function Account({ session, isGuest, initialView, onBackToHome, onSignOut, onGoToLogin }) { 
   const [view, setView] = useState(initialView || 'daily'); 
@@ -15,48 +15,100 @@ export default function Account({ session, isGuest, initialView, onBackToHome, o
 
   const user = session?.user;
 
-  // --- DATA FETCHING (Sidii hore) ---
+  // --- DATA FETCHING ---
   const fetchData = useCallback(async () => {
-    if (isGuest) { setLoading(false); return; }
+    if (isGuest) { 
+        setLoading(false); 
+        // Xitaa Guest Mode-ka, waa inaan wax u helnaa tusaale ahaan ama haddii aanu ka soo qaadno local storage
+        // Laakiin hadda, waxaanu ku tiirsanaanaynaa 'transactions' oo maran haddii isGuest
+        return; 
+    }
     setLoading(true);
     try {
+        // Fetch Profile Username
         const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
         if (profile) setUsername(profile.username);
-        const { data: trans, error } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('transaction_date', { ascending: false });
+        
+        // Fetch Transactions
+        const { data: trans, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('transaction_date', { ascending: false });
+        
         if (error) throw error;
         setTransactions(trans || []);
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+    } catch (error) { 
+        console.error("Error fetching data:", error); 
+    } finally { 
+        setLoading(false); 
+    }
   }, [user, isGuest]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { 
+      fetchData(); 
+  }, [fetchData]);
 
-  // --- ACTIONS (Sidii hore) ---
+  // --- ACTIONS ---
+  
+  // 1. Transaction Insert
   const handleNewTransaction = async (newTransaction) => {
     if (isGuest) {
+        // GUEST: Add to local state only
         const guestTrans = { ...newTransaction, id: Date.now() };
         setTransactions([guestTrans, ...transactions]);
         return;
     }
     try {
-        const { data, error } = await supabase.from('transactions').insert([{...newTransaction, user_id: user.id}]).select();
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert([{...newTransaction, user_id: user.id}])
+            .select();
+            
         if (error) throw error;
         setTransactions([data[0], ...transactions]);
-    } catch (error) { alert(error.message); }
+    } catch (error) { 
+        alert(error.message); 
+    }
   };
 
+  // 2. Transaction Delete (La Saxay)
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure?")) return;
-    if (isGuest) { setTransactions(transactions.filter(t => t.id !== id)); return; }
-    try { await supabase.from('transactions').delete().eq('id', id); setTransactions(transactions.filter(t => t.id !== id)); } 
-    catch (error) { alert(error.message); }
+    if (!window.confirm("Ma hubtaa inaad tirtirto xogtan?")) return;
+
+    // HADDII UU GUEST YAHAY (Kaliya Local State ka tirtir)
+    if (isGuest) {
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        return;
+    }
+
+    // HADDII UU USER YAHAY (Supabase ka tirtir marka hore)
+    try {
+        const { error } = await supabase
+            .from('transactions')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            throw error; // Haddii qalad jiro, u gudbi catch-ka
+        }
+
+        // Hadda oo Supabase laga tirtiray, ka saar shaashadda
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        
+    } catch (error) {
+        console.error("Error deleting:", error.message);
+        alert("Ma tirtiri karo xogtan! Waxaa laga yaabaa in Supabase Policy-gu uu diiday.");
+    }
   };
+
 
   const handleUpdateSuccess = (updatedItem) => {
       setTransactions(transactions.map(t => t.id === updatedItem.id ? updatedItem : t));
       setEditingTransaction(null);
   };
 
-  if (loading && !isGuest) return <div style={{textAlign:'center', padding:'50px'}}>Loading...</div>;
+  if (loading && !isGuest) return <div style={{textAlign:'center', padding:'50px', color: 'var(--text-main)'}}>Loading...</div>;
 
   return (
     <div className="dashboard-container">
@@ -76,11 +128,11 @@ export default function Account({ session, isGuest, initialView, onBackToHome, o
 
             {/* User Info / Login Button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <span style={{ fontSize: '14px', color: '#888', fontStyle: 'italic' }}>
+                <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                     {isGuest ? 'Guest Mode' : username || 'User'}
                 </span>
                 {isGuest ? (
-                    <button onClick={onGoToLogin} style={{padding: '8px 16px', background: '#007bff', color:'white', border:'none', borderRadius:'6px', cursor:'pointer', fontWeight:'bold'}}>Login</button>
+                    <button onClick={onGoToLogin} className="btn-login" style={{background: '#007bff', color:'white'}}>Login</button>
                 ) : null}
             </div>
         </div>
@@ -90,21 +142,21 @@ export default function Account({ session, isGuest, initialView, onBackToHome, o
             <Plan session={session} transactions={transactions} isGuest={isGuest} />
         ) : (
             <>
-                {/* TRANSACTION FORM (Waa la nadiifiyay) */}
+                {/* TRANSACTION FORM */}
                 <TransactionForm session={session} onTransactionInsert={handleNewTransaction} isGuest={isGuest} />
                 
-                {/* ANALYSIS (Waa la nadiifiyay) */}
+                {/* ANALYSIS (Ku tiirsan transactions) */}
                 <Analysis transactions={transactions} />
 
                 {/* TRANSACTION HISTORY */}
                 <div className="transaction-card" style={{marginTop: '30px'}}>
-                    <h3 style={{borderBottom:'1px solid #eee', paddingBottom:'10px'}}>Recent History</h3>
+                    <h3 style={{borderBottom:'1px solid var(--border-color)', paddingBottom:'10px', color: 'var(--text-main)'}}>Recent History</h3>
                     {transactions.length === 0 ? (
-                        <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No transactions yet.</p>
+                        <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>No transactions yet.</p>
                     ) : (
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
                             <thead>
-                                <tr style={{ color: '#888', fontSize: '14px', textAlign: 'left' }}>
+                                <tr style={{ color: 'var(--text-muted)', fontSize: '14px', textAlign: 'left' }}>
                                     <th style={{ padding: '10px' }}>Date</th>
                                     <th style={{ padding: '10px' }}>Description</th>
                                     <th style={{ padding: '10px', textAlign: 'right' }}>Amount</th>
@@ -113,9 +165,9 @@ export default function Account({ session, isGuest, initialView, onBackToHome, o
                             </thead>
                             <tbody>
                                 {transactions.map(t => (
-                                    <tr key={t.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                                        <td style={{ padding: '12px 10px', fontSize: '14px' }}>{t.transaction_date}</td>
-                                        <td style={{ padding: '12px 10px', fontWeight: '500' }}>{t.description}</td>
+                                    <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '12px 10px', fontSize: '14px', color: 'var(--text-main)' }}>{t.transaction_date}</td>
+                                        <td style={{ padding: '12px 10px', fontWeight: '500', color: 'var(--text-main)' }}>{t.description}</td>
                                         <td style={{ padding: '12px 10px', textAlign: 'right', color: t.transaction_type === 'Income' ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
                                             {t.transaction_type === 'Income' ? '+' : '-'}${t.amount}
                                         </td>

@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 
 export default function Plan({ session, transactions, isGuest }) { 
   // State-yada Foomka
-  const [selectedMonth, setSelectedMonth] = useState('January'); // Bisha la dooranayo
+  const [selectedMonth, setSelectedMonth] = useState('January'); 
   const [goalAmount, setGoalAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,14 +12,19 @@ export default function Plan({ session, transactions, isGuest }) {
   // State-ka Plans-ka la keydiyay
   const [savedPlans, setSavedPlans] = useState([]);
 
+  // State cusub: Haynta Plan-ka la Tifaftirayo
+  const [editingPlanId, setEditingPlanId] = useState(null); 
+
   // 1. Soo rog Plans-ka haddii uusan Guest ahayn
   useEffect(() => {
     if (!isGuest && session?.user) {
         fetchPlans();
     }
+    // Haddii uu guest yahay, ka hubi local storage-ka ama ha maranaado
   }, [session, isGuest]);
 
   const fetchPlans = async () => {
+    setLoading(true);
     try {
         const { data, error } = await supabase
             .from('plans')
@@ -31,75 +36,118 @@ export default function Plan({ session, transactions, isGuest }) {
         setSavedPlans(data || []);
     } catch (error) {
         console.error("Error fetching plans:", error.message);
+    } finally {
+        setLoading(false);
     }
   };
 
-  // 2. Keydinta Plan-ka (Guest vs User)
-  const handleSavePlan = async (e) => {
+  // --- DELETE FUNCTION ---
+  const handleDeletePlan = async (id) => {
+    if (!window.confirm("Ma hubtaa inaad tirtirto qorshahan keydka ah?")) return;
+
+    if (isGuest) {
+        // GUEST: Local Delete
+        setSavedPlans(prev => prev.filter(p => p.id !== id));
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from('plans')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        
+        // Success: Remove from local state
+        setSavedPlans(prev => prev.filter(p => p.id !== id));
+
+    } catch (error) {
+        console.error("Error deleting plan:", error.message);
+        alert("Qorshaha lama tirtiri karo. Hubi Supabase Policy (Delete).");
+    }
+  };
+  
+  // --- START EDIT FUNCTION ---
+  const startEditPlan = (plan) => {
+    // Ka dhig foomka mid ku buuxa xogta qorshaha
+    setSelectedMonth(plan.month);
+    setGoalAmount(plan.budget_target.toString());
+    setNotes(plan.notes || '');
+    setEditingPlanId(plan.id); // Set the ID si foomku u ogaado inuu update sameynayo
+  };
+
+  // --- SUBMIT/SAVE/UPDATE FUNCTION ---
+  const handleSubmitPlan = async (e) => {
     e.preventDefault();
     
-    // Hubi haddii Plan bishan ah uu horey u jiray (Optional: waad cusboonaysiin kartaa)
-    const existingPlanIndex = savedPlans.findIndex(p => p.month === selectedMonth);
-    
-    const newPlan = {
-      id: isGuest ? Date.now() : undefined, // Fake ID for guest
-      month: selectedMonth,
-      budget_target: parseFloat(goalAmount),
-      notes: notes,
-      user_id: session?.user?.id
+    const newGoalAmount = parseFloat(goalAmount);
+
+    if (isNaN(newGoalAmount) || newGoalAmount <= 0) {
+        alert("Fadlan geli lacag sax ah.");
+        return;
+    }
+
+    const planData = {
+        month: selectedMonth,
+        budget_target: newGoalAmount,
+        notes: notes,
+        user_id: session?.user?.id
     };
 
     if (isGuest) {
-        // GUEST: Local Update
-        if (existingPlanIndex >= 0) {
+        // GUEST MODE: INSERT or UPDATE
+        if (editingPlanId) {
             // Update existing
-            const updatedPlans = [...savedPlans];
-            updatedPlans[existingPlanIndex] = newPlan;
-            setSavedPlans(updatedPlans);
+            setSavedPlans(prev => prev.map(p => 
+                p.id === editingPlanId ? { ...p, ...planData, id: editingPlanId } : p
+            ));
         } else {
-            // Add new
-            setSavedPlans([newPlan, ...savedPlans]);
+            // Insert new
+            setSavedPlans([{ ...planData, id: Date.now() }, ...savedPlans]);
         }
-        alert(`(Demo) Goal for ${selectedMonth} set to $${goalAmount}`);
     } else {
-        // USER: Supabase Insert/Update
+        // USER MODE: Supabase INSERT or UPDATE
         setLoading(true);
-        // Halkan waxaan isticmaaleynaa upsert ama delete/insert si fudud
-        // Laakiin aan ku darno insert cusub hadda
-        const { error } = await supabase.from('plans').insert([
-            { month: selectedMonth, budget_target: parseFloat(goalAmount), notes, user_id: session.user.id }
-        ]);
 
-        if (error) {
-            alert('Error saving plan: ' + error.message);
+        if (editingPlanId) {
+            // UPDATE
+            const { error } = await supabase.from('plans')
+                .update(planData)
+                .eq('id', editingPlanId);
+
+            if (error) alert('Error updating plan: ' + error.message);
+            else alert('Goal updated successfully!');
+
         } else {
-            alert(`Goal for ${selectedMonth} saved successfully!`);
-            fetchPlans(); // Refresh list
+            // INSERT
+            const { error } = await supabase.from('plans').insert([planData]);
+            
+            if (error) alert('Error saving plan: ' + error.message);
+            else alert(`Goal for ${selectedMonth} saved successfully!`);
         }
+        fetchPlans(); // Refresh list after any Supabase action
         setLoading(false);
     }
 
-    // Reset Form
+    // Reset form states and editing status
     setGoalAmount('');
     setNotes('');
+    setEditingPlanId(null);
   };
 
-  // 3. XISAABINTA PROGRESS-KA (CORE LOGIC)
-  // Function-kan wuxuu isku xirayaa Plan-ka iyo Transactions-ka dhabta ah
+  // --- PROGRESS CALCULATION (From previous step) ---
   const calculateProgress = (plan) => {
       const targetMonth = plan.month;
-      const targetGoal = plan.budget_target || 1; // Ka hortag in 0 loo qaybiyo
+      const targetGoal = plan.budget_target || 1; 
 
-      // A. Shaandhee Transactions-ka bishaas kaliya
       const monthlyTransactions = transactions.filter(t => {
           if (!t.transaction_date) return false;
-          // U beddel taariikhda magaca bisha (e.g., "2025-02-12" -> "February")
           const tDate = new Date(t.transaction_date);
           const tMonthName = tDate.toLocaleString('default', { month: 'long' });
           return tMonthName === targetMonth;
       });
 
-      // B. Xisaabi Income iyo Expense bishaas
       const totalIncome = monthlyTransactions
           .filter(t => t.transaction_type === 'Income')
           .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
@@ -108,25 +156,20 @@ export default function Plan({ session, transactions, isGuest }) {
           .filter(t => t.transaction_type === 'Expense')
           .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-      // C. Xisaabi Net Balance (Waa lacagta keydka kuu geli karta)
       const netBalance = totalIncome - totalExpense;
-
-      // D. Xisaabi Boqolleyda (Percentage)
       let percentage = (netBalance / targetGoal) * 100;
       
-      // Xaddid boqolleyda inta u dhaxaysa 0 iyo 100 (muuqaalka kaliya)
       const displayPercentage = Math.max(0, Math.min(100, Math.round(percentage)));
       
-      // Midabka Progress Bar-ka
-      let color = '#dc3545'; // Red (Default/Low)
-      if (displayPercentage >= 50) color = '#ffc107'; // Yellow (Medium)
-      if (displayPercentage >= 100) color = '#28a745'; // Green (Success)
+      let color = '#dc3545'; 
+      if (displayPercentage >= 50) color = '#ffc107'; 
+      if (displayPercentage >= 100) color = '#28a745'; 
 
       return {
           income: totalIncome,
           expense: totalExpense,
           netBalance: netBalance,
-          percentage: Math.round(percentage), // Kan dhabta ah (wuu ka badan karaa 100%)
+          percentage: Math.round(percentage), 
           displayPercentage,
           color,
           remaining: targetGoal - netBalance
@@ -142,13 +185,13 @@ export default function Plan({ session, transactions, isGuest }) {
       {/* HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <h2 style={{ fontSize: '28px', marginBottom: '10px' }}>Savings Goals</h2>
-          <p style={{ color: '#666' }}>Plan your monthly savings and track your progress.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Plan your monthly savings and track your progress.</p>
       </div>
       
       {/* 1. FOOMKA QORSHEYNTA */}
       <div className="transaction-card" style={{ marginBottom: '40px' }}>
-        <h3 className="form-title">Set New Goal</h3>
-        <form onSubmit={handleSavePlan}>
+        <h3 className="form-title">{editingPlanId ? 'Edit Goal' : 'Set New Goal'}</h3>
+        <form onSubmit={handleSubmitPlan}>
             <div className="form-grid">
                 <div className="input-wrapper">
                     <label>Select Month</label>
@@ -156,6 +199,8 @@ export default function Plan({ session, transactions, isGuest }) {
                         className="modern-input" 
                         value={selectedMonth} 
                         onChange={(e) => setSelectedMonth(e.target.value)}
+                        // Ma dooran kartid bisha haddii aad edit ku jirto
+                        disabled={!!editingPlanId} 
                     >
                         {months.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
@@ -185,9 +230,21 @@ export default function Plan({ session, transactions, isGuest }) {
                 />
             </div>
 
-            <button type="submit" disabled={loading} className="add-btn">
-                {loading ? 'Saving...' : 'Set Goal'}
-            </button>
+            <div style={{display:'flex', gap:'10px'}}>
+                <button type="submit" disabled={loading} className="add-btn">
+                    {loading ? 'Processing...' : editingPlanId ? 'Update Goal' : 'Set Goal'}
+                </button>
+                {editingPlanId && (
+                    <button 
+                        type="button" 
+                        onClick={() => setEditingPlanId(null)} 
+                        className="add-btn" 
+                        style={{ background: '#6c757d', color: 'white', width: '30%' }}
+                    >
+                        Cancel
+                    </button>
+                )}
+            </div>
         </form>
       </div>
 
@@ -195,8 +252,10 @@ export default function Plan({ session, transactions, isGuest }) {
       <div>
         <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>Your Progress</h3>
         
-        {savedPlans.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#999', padding: '20px', background: '#f9f9f9', borderRadius: '8px' }}>
+        {loading && !isGuest ? (
+            <div style={{textAlign:'center', padding:'30px'}}>Loading plans...</div>
+        ) : savedPlans.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                 No savings goals set yet.
             </p>
         ) : (
@@ -205,27 +264,27 @@ export default function Plan({ session, transactions, isGuest }) {
                     const stats = calculateProgress(plan);
                     
                     return (
-                        <div key={plan.id || plan.month} style={{ background: 'white', padding: '25px', borderRadius: '12px', border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                        <div key={plan.id || plan.month} style={{ background: 'var(--bg-card)', padding: '25px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow)' }}>
                             
                             {/* Card Header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                 <div>
-                                    <h4 style={{ fontSize: '20px', margin: 0 }}>{plan.month}</h4>
-                                    <span style={{ fontSize: '13px', color: '#888' }}>{plan.notes || 'No notes'}</span>
+                                    <h4 style={{ fontSize: '20px', margin: 0, color:'var(--text-main)' }}>{plan.month}</h4>
+                                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{plan.notes || 'No notes'}</span>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '14px', color: '#666' }}>Goal</div>
-                                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#000' }}>${plan.budget_target}</div>
+                                    <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Goal</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>${plan.budget_target}</div>
                                 </div>
                             </div>
 
                             {/* Financial Summary for Month */}
-                            <div style={{ display: 'flex', gap: '15px', fontSize: '13px', marginBottom: '15px', color: '#555' }}>
-                                <span style={{ background: '#f0fdf4', padding: '4px 8px', borderRadius: '4px', color: '#166534' }}>
-                                    Income: +${stats.income}
+                            <div style={{ display: 'flex', gap: '15px', fontSize: '13px', marginBottom: '15px', color: 'var(--text-muted)' }}>
+                                <span style={{ background: 'var(--box-pink)', padding: '4px 8px', borderRadius: '4px', color: 'var(--text-main)' }}>
+                                    Income: +${stats.income.toFixed(2)}
                                 </span>
-                                <span style={{ background: '#fef2f2', padding: '4px 8px', borderRadius: '4px', color: '#991b1b' }}>
-                                    Expense: -${stats.expense}
+                                <span style={{ background: 'var(--box-gray)', padding: '4px 8px', borderRadius: '4px', color: 'var(--text-main)' }}>
+                                    Expense: -${stats.expense.toFixed(2)}
                                 </span>
                             </div>
 
@@ -233,12 +292,12 @@ export default function Plan({ session, transactions, isGuest }) {
                             <div style={{ marginBottom: '10px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px', fontWeight: '600' }}>
                                     <span style={{ color: stats.netBalance >= 0 ? '#28a745' : '#dc3545' }}>
-                                        Net Saved: ${stats.netBalance}
+                                        Net Saved: ${stats.netBalance.toFixed(2)}
                                     </span>
                                     <span>{stats.percentage}%</span>
                                 </div>
                                 
-                                <div style={{ width: '100%', height: '12px', background: '#e0e0e0', borderRadius: '6px', overflow: 'hidden' }}>
+                                <div style={{ width: '100%', height: '12px', background: 'var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
                                     <div style={{ 
                                         width: `${stats.displayPercentage}%`, 
                                         height: '100%', 
@@ -248,15 +307,28 @@ export default function Plan({ session, transactions, isGuest }) {
                                 </div>
                             </div>
 
-                            {/* Status Message */}
-                            <div style={{ fontSize: '13px', textAlign: 'right', marginTop: '5px' }}>
-                                {stats.netBalance >= plan.budget_target ? (
-                                    <span style={{ color: '#28a745', fontWeight: 'bold' }}>🎉 Goal Reached!</span>
-                                ) : (
-                                    <span style={{ color: '#666' }}>
-                                        You need <b>${stats.remaining > 0 ? stats.remaining.toFixed(2) : 0}</b> more to reach your goal.
-                                    </span>
-                                )}
+                            {/* Actions and Status */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems:'center', marginTop: '10px' }}>
+                                {/* Status Message */}
+                                <div style={{ fontSize: '13px' }}>
+                                    {stats.netBalance >= plan.budget_target ? (
+                                        <span style={{ color: '#28a745', fontWeight: 'bold' }}>🎉 Goal Reached!</span>
+                                    ) : (
+                                        <span style={{ color: 'var(--text-muted)' }}>
+                                            Need <b>${stats.remaining > 0 ? stats.remaining.toFixed(2) : 0}</b> more.
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {/* Action Buttons */}
+                                <div>
+                                    <button onClick={() => startEditPlan(plan)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007bff', fontWeight: '600', marginRight: '10px' }}>
+                                        ✏️ Edit
+                                    </button>
+                                    <button onClick={() => handleDeletePlan(plan.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc3545', fontWeight: '600' }}>
+                                        🗑️ Delete
+                                    </button>
+                                </div>
                             </div>
 
                         </div>
