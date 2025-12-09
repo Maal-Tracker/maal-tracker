@@ -14,7 +14,8 @@ export default function Navbar({ onNavigate, isLoggedIn, onSignOut, onSignIn, th
       
       {/* LOGO */}
       <div className="nav-logo" onClick={() => handleNavClick('landing')}>
-        <div style={{width:'30px', height:'30px', background:'#FFD600', borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center', marginRight:'10px', fontSize:'18px'}}>📊</div>
+        <img src="/logo.jpg" alt="" />
+        
         <span>Maal Tracker</span>
       </div>
 
