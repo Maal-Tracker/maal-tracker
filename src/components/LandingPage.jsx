@@ -41,10 +41,7 @@ export default function LandingPage({ onNavigate }) {
                     <button onClick={() => onNavigate('plan')} className="btn-hero btn-black">Plan</button>
                 </div>
                 
-                <p style={{ fontSize: '14px', color: '#888', marginTop: '20px' }}>
-                    * Clicking buttons above starts <b>Demo Mode</b> (Data not saved). Log in to save data.
-                </p>
-            </section>
+                    </section>
 
             {/* 3. WHY CHOOSE US (Zig-Zag Design) */}
             <section className="features-section">
