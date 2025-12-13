@@ -7,13 +7,8 @@ import LandingPage from './components/LandingPage';
 import Navbar from './components/Navbar';
 import About from './components/About';
 import Contact from './components/Contact';
-import ReactGA from "react-ga4";
 
-// Ku bilow Google Analytics ID-gaaga
-ReactGA.initialize("G-CBYZZ6455R");
 
-// Track-garee bogga koowaad (Initial Page View)
-ReactGA.send({ hitType: "pageview", page: window.location.pathname });
 
 export default function App() {
   const [session, setSession] = useState(null);
