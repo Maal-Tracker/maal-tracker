@@ -1,90 +1,75 @@
-// src/App.jsx
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
-import Auth from './components/Auth';
-import Account from './components/Account';
+
+// Components
 import LandingPage from './components/LandingPage';
-import Navbar from './components/Navbar';
-import About from './components/About';
-import Contact from './components/Contact';
-
-
+import AppLayout from './components/AppLayout';
+import Today from './components/Today';
+import Challenge from './components/Challenge'; // Faylka cusub ee Challenge
 
 export default function App() {
   const [session, setSession] = useState(null);
-  const [view, setView] = useState('landing'); 
-  const [targetFeature, setTargetFeature] = useState('daily'); 
-  const [isGuestMode, setIsGuestMode] = useState(false);
-  
-  // 1. Theme State (Default: light)
-  const [theme, setTheme] = useState('light');
+  const [isGuest, setIsGuest] = useState(false);
+  const navigate = useNavigate();
 
+  // 1. Hubinta Session-ka (Backend Logic ma beddelmin)
   useEffect(() => {
-    // 2. Apply Theme to <html> tag
-    document.documentElement.setAttribute('data-theme', theme);
-    
-    // Auth Check
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (!session) {
-        setView('landing');
-        setIsGuestMode(false);
-      }
     });
+
     return () => subscription.unsubscribe();
-  }, [theme]); // Re-run when theme changes
+  }, []);
 
-  // 3. Toggle Function
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
-
-  // Feature Handling
-  const handleFeatureClick = (feature) => {
-      setTargetFeature(feature);
-      if (session) {
-          setIsGuestMode(false);
-          setView('dashboard');
-      } else {
-          setIsGuestMode(true);
-          setView('dashboard');
-      }
-  };
-
-  const renderContent = () => {
-    switch(view) {
-        case 'landing': return <LandingPage onNavigate={handleFeatureClick} />;
-        case 'about': return <About />;
-        case 'contact': return <Contact />;
-        case 'auth': return <div className="container" style={{marginTop:'50px', maxWidth:'400px', margin:'50px auto', padding:'20px', borderRadius:'8px'}}><Auth /></div>;
-        case 'dashboard': return <Account key={session ? session.user.id : 'guest'} session={session} isGuest={isGuestMode} initialView={targetFeature} onBackToHome={() => setView('landing')} onGoToLogin={() => setView('auth')} />;
-        default: return <LandingPage onNavigate={handleFeatureClick} />;
+  // 2. Navigation-ka Landing Page-ka
+  const handleStartTracking = (type) => {
+    if (type === 'guest') {
+      setIsGuest(true);
+      navigate('/today'); 
+    } else if (type === 'login') {
+      // Logic-ga Login-ka halkaan ayuu galayaa
     }
   };
 
-  return (
-    <div>
-        {/* Pass Theme Props to Navbar */}
-        <Navbar 
-            onNavigate={setView} 
-            isLoggedIn={!!session} 
-            onSignOut={() => supabase.auth.signOut()}
-            onSignIn={() => setView('auth')}
-            theme={theme}
-            toggleTheme={toggleTheme}
-        />
-        
-        {renderContent()}
+  const handleSignOut = async () => {
+    if (!isGuest) {
+      await supabase.auth.signOut();
+    }
+    setIsGuest(false);
+    setSession(null);
+    navigate('/'); 
+  };
 
-        {view !== 'dashboard' && view !== 'auth' && (
-            <footer className="footer">
-                <div className="footer-links">
-                    <span>Home</span> • <span>About</span> • <span>Contact Support</span> • <span>Privacy Policy</span>
-                </div>
-                <div>© 2025 Maal Tracker — All rights reserved.</div>
-            </footer>
+  return (
+    <div className="app-container">
+      <Routes>
+        {/* BOGGA HORE (LANDING PAGE) */}
+        {!session && !isGuest ? (
+          <Route path="*" element={<LandingPage onNavigate={handleStartTracking} />} />
+        ) : (
+          /* QAABKA GUDHA APP-KA (APP LAYOUT) */
+          <Route element={<AppLayout onSignOut={handleSignOut} />}>
+            {/* Si toos ah ugu gee Today marka uu soo galo */}
+            <Route path="/" element={<Navigate to="/today" replace />} />
+            
+            {/* TODAY PAGE: Lama taaban design-kiisa iyo logic-giisa */}
+            <Route path="/today" element={<Today session={session} isGuest={isGuest} />} />
+            
+            {/* CHALLENGE PAGE: Bogga cusub ee tababarka */}
+            <Route path="/challenge" element={<Challenge session={session} isGuest={isGuest} />} />
+            
+            {/* Redirection haddii uu isku dayo bogag hore u jiray */}
+            <Route path="/week" element={<Navigate to="/today" replace />} />
+            <Route path="/month" element={<Navigate to="/today" replace />} />
+            <Route path="/plan" element={<Navigate to="/today" replace />} />
+          </Route>
         )}
+      </Routes>
     </div>
   );
 }
