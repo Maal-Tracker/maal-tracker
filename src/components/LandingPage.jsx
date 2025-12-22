@@ -15,7 +15,7 @@ export default function LandingPage({ onNavigate }) {
       {/* Hero Section */}
       <main style={styles.hero}>
         <h1 style={styles.mainTitle}>
-          Track your spending. <span style={{ color: '#2D6A4F' }}>Stay in control.</span>
+          Track your spending. <span style={{ color: '#FFD700' }}>Stay in control.</span>
         </h1>
         <p style={styles.subTitle}>
           The simplest way to understand where your money goes. 
@@ -31,9 +31,9 @@ export default function LandingPage({ onNavigate }) {
         <div style={styles.previewContainer}>
             <div style={styles.mockupPhone}>
                 <div style={styles.mockupContent}>
-                    <p style={{fontSize: '10px', color: '#999'}}>Today</p>
-                    <p style={{fontSize: '12px', color: '#999'}}>Spent today</p>
-                    <h2 style={{margin: '5px 0'}}>$45</h2>
+                    <p style={{fontSize: '10px', color: '#999', textAlign: 'center'}}>Today</p>
+                    <p style={{fontSize: '12px', color: '#999', textAlign: 'center'}}>Spent today</p>
+                    <h2 style={{margin: '5px 0', textAlign: 'center', fontSize: '28px'}}>$45</h2>
                     <div style={styles.mockupItem}><span>🍱 Lunch</span> <span>$12</span></div>
                     <div style={styles.mockupItem}><span>🚗 Uber</span> <span>$18</span></div>
                     <div style={styles.mockupItem}><span>☕ Coffee</span> <span>$5</span></div>
@@ -45,31 +45,33 @@ export default function LandingPage({ onNavigate }) {
 
       {/* How it works */}
       <section style={styles.howItWorks}>
-        <h3 style={{textAlign: 'center', marginBottom: '40px'}}>How it works</h3>
+        <h3 style={{textAlign: 'center', marginBottom: '40px', fontSize: '24px', fontWeight: '800'}}>How it works</h3>
         <div style={styles.stepsGrid}>
           <div style={styles.step}>
             <div style={styles.stepIcon}>📱 <span style={styles.stepNum}>1</span></div>
-            <h4>Open the app</h4>
-            <p>Just tap the icon. That's it. No login drama.</p>
+            <h4 style={styles.stepTitle}>Open the app</h4>
+            <p style={styles.stepDesc}>Just tap the icon. That's it. No login drama.</p>
           </div>
           <div style={styles.step}>
             <div style={styles.stepIcon}>📉 <span style={styles.stepNum}>2</span></div>
-            <h4>Add what you spent</h4>
-            <p>Enter the amount, pick a category. Done in 3 seconds.</p>
+            <h4 style={styles.stepTitle}>Add what you spent</h4>
+            <p style={styles.stepDesc}>Enter the amount, pick a category. Done in 3 seconds.</p>
           </div>
           <div style={styles.step}>
             <div style={styles.stepIcon}>🎯 <span style={styles.stepNum}>3</span></div>
-            <h4>See your patterns</h4>
-            <p>Watch your spending habits. Stay motivated to save.</p>
+            <h4 style={styles.stepTitle}>See your patterns</h4>
+            <p style={styles.stepDesc}>Watch your spending habits. Stay motivated to save.</p>
           </div>
         </div>
       </section>
 
       {/* Footer CTA */}
       <section style={styles.footerCTA}>
-        <h2>Ready to take control?</h2>
-        <p>Join thousands of people who track their daily spending with Maal Tracker.</p>
-        <button onClick={() => onNavigate('guest')} style={styles.ctaBtn}>Start tracking free →</button>
+        <div style={styles.footerCard}>
+          <h2 style={{fontSize: '32px', fontWeight: '800', marginBottom: '15px'}}>Ready to take control?</h2>
+          <p style={{color: '#666', marginBottom: '30px'}}>Join thousands of people who track their daily spending with Maal Tracker.</p>
+          <button onClick={() => onNavigate('guest')} style={styles.ctaBtn}>Start tracking free →</button>
+        </div>
       </section>
 
       <footer style={{textAlign: 'center', padding: '40px', color: '#999', fontSize: '12px'}}>
@@ -80,26 +82,29 @@ export default function LandingPage({ onNavigate }) {
 }
 
 const styles = {
-  container: { fontFamily: 'sans-serif', color: '#1a1a1a', backgroundColor: '#fff' },
+  container: { fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1a1a1a', backgroundColor: '#fff' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 5%', maxWidth: '1200px', margin: '0 auto' },
   logoContainer: { display: 'flex', alignItems: 'center', gap: '10px' },
-  logoIcon: { width: '32px', height: '32px', borderRadius: '50%' },
-  logoText: { fontWeight: 'bold', fontSize: '18px' },
-  signInBtn: { border: 'none', background: 'none', cursor: 'pointer', fontWeight: '500' },
-  hero: { textAlign: 'center', padding: '80px 5%', maxWidth: '800px', margin: '0 auto' },
-  mainTitle: { fontSize: '48px', fontWeight: '800', marginBottom: '20px', lineHeight: '1.1' },
-  subTitle: { fontSize: '18px', color: '#666', marginBottom: '40px', lineHeight: '1.5' },
-  ctaBtn: { backgroundColor: '#52B788', color: '#fff', border: 'none', padding: '15px 35px', borderRadius: '50px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(82, 183, 136, 0.3)' },
-  smallText: { fontSize: '12px', color: '#999', marginTop: '15px' },
-  previewContainer: { marginTop: '60px', display: 'flex', justifyContent: 'center' },
-  mockupPhone: { width: '220px', height: '320px', border: '8px solid #f0f0f0', borderRadius: '30px', padding: '15px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' },
+  logoIcon: { width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFD700' },
+  logoText: { fontWeight: '800', fontSize: '18px' },
+  signInBtn: { border: 'none', background: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '14px' },
+  hero: { textAlign: 'center', padding: '60px 5%', maxWidth: '900px', margin: '0 auto' },
+  mainTitle: { fontSize: '56px', fontWeight: '900', marginBottom: '20px', lineHeight: '1.1', letterSpacing: '-0.02em' },
+  subTitle: { fontSize: '18px', color: '#666', marginBottom: '40px', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto 40px' },
+  ctaBtn: { backgroundColor: '#FFD700', color: '#000', border: 'none', padding: '18px 40px', borderRadius: '15px', fontSize: '16px', fontWeight: '800', cursor: 'pointer', transition: 'transform 0.2s' },
+  smallText: { fontSize: '12px', color: '#999', marginTop: '20px' },
+  previewContainer: { marginTop: '80px', display: 'flex', justifyContent: 'center' },
+  mockupPhone: { width: '260px', height: '380px', border: '1px solid #eee', borderRadius: '40px', padding: '20px', boxShadow: '0 30px 60px rgba(0,0,0,0.08)', backgroundColor: '#fff' },
   mockupContent: { textAlign: 'left' },
-  mockupItem: { display: 'flex', justifyContent: 'space-between', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '10px', marginBottom: '8px', fontSize: '12px' },
-  mockupButton: { backgroundColor: '#D97706', color: '#fff', padding: '10px', borderRadius: '10px', textAlign: 'center', marginTop: '15px', fontSize: '12px' },
-  howItWorks: { padding: '80px 5%', maxWidth: '1000px', margin: '0 auto' },
-  stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' },
+  mockupItem: { display: 'flex', justifyContent: 'space-between', padding: '12px 15px', backgroundColor: '#f8f9fa', borderRadius: '15px', marginBottom: '10px', fontSize: '13px', fontWeight: '600' },
+  mockupButton: { backgroundColor: '#1a1a1a', color: '#fff', padding: '14px', borderRadius: '15px', textAlign: 'center', marginTop: '20px', fontSize: '13px', fontWeight: '700' },
+  howItWorks: { padding: '100px 5%', maxWidth: '1100px', margin: '0 auto' },
+  stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '50px' },
   step: { textAlign: 'center' },
-  stepIcon: { fontSize: '30px', marginBottom: '15px', position: 'relative', display: 'inline-block' },
-  stepNum: { position: 'absolute', top: '-5px', right: '-15px', backgroundColor: '#52B788', color: '#fff', fontSize: '12px', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  footerCTA: { backgroundColor: '#f4fbf8', padding: '80px 5%', textAlign: 'center', borderRadius: '30px', margin: '40px 5%' }
+  stepIcon: { fontSize: '32px', marginBottom: '20px', position: 'relative', display: 'inline-block' },
+  stepNum: { position: 'absolute', top: '-5px', right: '-15px', backgroundColor: '#FFD700', color: '#000', fontSize: '11px', fontWeight: '800', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  stepTitle: { fontSize: '18px', fontWeight: '800', marginBottom: '10px' },
+  stepDesc: { color: '#666', fontSize: '15px', lineHeight: '1.5' },
+  footerCTA: { padding: '0 5% 60px' },
+  footerCard: { backgroundColor: '#fffcf0', padding: '80px 5%', textAlign: 'center', borderRadius: '40px', maxWidth: '1000px', margin: '0 auto' }
 };

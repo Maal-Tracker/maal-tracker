@@ -91,14 +91,14 @@ export default function Today({ session, isGuest }) {
         <h1 style={styles.totalAmount}>${todayTotal}</h1>
       </div>
 
-      {/* 1. Desktop Add Button (Kaliya Desktop ka u muuqda) */}
+      {/* Add Expense Button (Desktop) */}
       {!isMobile && (
         <button onClick={() => setShowModal(true)} style={styles.addBtnDesktop}>
           + Add expense
         </button>
       )}
 
-      {/* 2. Floating Action Button (Kaliya Mobile ka u muuqda) */}
+      {/* Floating Action Button (Mobile) */}
       {isMobile && (
         <button onClick={() => setShowModal(true)} style={styles.fabMobile}>
           +
@@ -125,7 +125,7 @@ export default function Today({ session, isGuest }) {
         ))}
       </div>
 
-      {/* 3. Modern Modal (Add Expense Modal) */}
+      {/* Modern Modal (Add Expense) */}
       {showModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -156,17 +156,17 @@ export default function Today({ session, isGuest }) {
                   onClick={() => setCategory(cat.name)}
                   style={{
                     ...styles.catBtn, 
-                    backgroundColor: category === cat.name ? '#52B788' : '#F1F5F9',
-                    color: category === cat.name ? '#fff' : '#64748B'
+                    backgroundColor: category === cat.name ? '#FFCC00' : '#F1F5F9', // Jaallo marka la doorto
+                    color: '#1E293B'
                   }}
                 >
-                  <span style={{ marginRight: '6px' }}>{cat.icon}</span> {cat.name}
+                  <span style={{ marginRight: '8px' }}>{cat.icon}</span> {cat.name}
                 </button>
               ))}
             </div>
 
             <button onClick={handleSave} style={styles.saveBtnFull}>
-              ✓ Save Expense
+              <span style={{ fontSize: '20px' }}>✓</span> Save Expense
             </button>
           </div>
         </div>
@@ -177,66 +177,66 @@ export default function Today({ session, isGuest }) {
 
 const styles = {
   container: { 
-    padding: '20px', maxWidth: '500px', margin: '0 auto', 
+    padding: '24px', maxWidth: '500px', margin: '0 auto', 
     backgroundColor: '#fff', minHeight: '100vh', position: 'relative',
-    fontFamily: '-apple-system, sans-serif'
+    fontFamily: '-apple-system, system-ui, sans-serif'
   },
   header: { textAlign: 'center', marginTop: '10px' },
-  dateLabel: { color: '#94a3b8', fontSize: '14px', margin: 0 },
-  fullDate: { color: '#64748b', fontSize: '14px', fontWeight: '500', margin: '4px 0 0 0' },
-  spendingDisplay: { textAlign: 'center', margin: '40px 0' },
-  spentLabel: { color: '#94a3b8', fontSize: '16px' },
+  dateLabel: { color: '#94a3b8', fontSize: '15px', margin: 0 },
+  fullDate: { color: '#64748b', fontSize: '15px', fontWeight: '500', margin: '4px 0 0 0' },
+  spendingDisplay: { textAlign: 'center', margin: '50px 0' },
+  spentLabel: { color: '#94a3b8', fontSize: '17px' },
   totalAmount: { fontSize: '72px', fontWeight: '800', color: '#1e293b', margin: '10px 0' },
   
   addBtnDesktop: { 
-    width: '100%', padding: '18px', backgroundColor: '#E67E22', color: '#fff', 
-    border: 'none', borderRadius: '16px', fontSize: '18px', fontWeight: '700', 
-    boxShadow: '0 10px 20px rgba(230, 126, 34, 0.2)', cursor: 'pointer', marginBottom: '30px' 
+    width: '100%', padding: '18px', backgroundColor: '#FFD700', color: '#000', 
+    border: 'none', borderRadius: '18px', fontSize: '18px', fontWeight: '750', 
+    boxShadow: '0 8px 20px rgba(255, 215, 0, 0.2)', cursor: 'pointer', marginBottom: '32px' 
   },
 
   fabMobile: {
-    position: 'fixed', bottom: '100px', right: '25px', width: '60px', height: '60px', 
-    borderRadius: '50%', backgroundColor: '#E67E22', color: '#fff', fontSize: '32px', 
-    border: 'none', boxShadow: '0 6px 15px rgba(230, 126, 34, 0.4)', cursor: 'pointer', 
+    position: 'fixed', bottom: '110px', right: '24px', width: '64px', height: '64px', 
+    borderRadius: '50%', backgroundColor: '#FFD700', color: '#000', fontSize: '32px', 
+    border: 'none', boxShadow: '0 8px 25px rgba(255, 215, 0, 0.4)', cursor: 'pointer', 
     zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
 
-  listSection: { display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '120px' },
+  listSection: { display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '120px' },
   card: { 
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-    padding: '16px', backgroundColor: '#fff', borderRadius: '16px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9'
+    padding: '20px', backgroundColor: '#fff', borderRadius: '22px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9'
   },
-  cardLeft: { display: 'flex', alignItems: 'center', gap: '15px' },
+  cardLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
   iconCircle: { 
-    width: '45px', height: '45px', backgroundColor: '#f8fafc', 
-    borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' 
+    width: '48px', height: '48px', backgroundColor: '#f8fafc', 
+    borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' 
   },
-  catName: { fontWeight: '600', color: '#334155', margin: 0 },
-  timeText: { fontSize: '12px', color: '#94a3b8', margin: 0 },
-  cardAmount: { fontWeight: '700', fontSize: '18px', color: '#1e293b' },
+  catName: { fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '16px' },
+  timeText: { fontSize: '13px', color: '#94a3b8', margin: 0 },
+  cardAmount: { fontWeight: '800', fontSize: '19px', color: '#1e293b' },
 
   // Modal Styles
   modalOverlay: { 
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-    backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-end', zIndex: 2000 
+    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 2000 
   },
   modalContent: { 
     backgroundColor: '#fff', width: '100%', maxWidth: '500px', margin: '0 auto', 
-    padding: '24px', borderTopLeftRadius: '28px', borderTopRightRadius: '28px'
+    padding: '30px 24px', borderTopLeftRadius: '32px', borderTopRightRadius: '32px'
   },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  modalTitle: { fontSize: '18px', fontWeight: '700', color: '#1E293B' },
-  closeBtn: { background: 'none', border: 'none', fontSize: '18px', color: '#94A3B8' },
-  inputLabel: { textAlign: 'center', color: '#94A3B8', fontSize: '14px', marginBottom: '10px' },
-  amountWrapper: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', marginBottom: '30px' },
-  currencySymbol: { fontSize: '40px', fontWeight: '700', color: '#CBD5E1' },
-  modalInput: { width: '150px', fontSize: '64px', fontWeight: '800', border: 'none', outline: 'none', textAlign: 'left' },
-  categoryLabelText: { fontSize: '14px', fontWeight: '600', color: '#94A3B8', marginBottom: '12px' },
-  categoryGrid: { display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '30px' },
-  catBtn: { padding: '10px 16px', borderRadius: '12px', border: 'none', fontSize: '14px', fontWeight: '600' },
+  modalTitle: { fontSize: '20px', fontWeight: '800', color: '#1E293B' },
+  closeBtn: { background: 'none', border: 'none', fontSize: '20px', color: '#94A3B8', cursor: 'pointer' },
+  inputLabel: { textAlign: 'center', color: '#94A3B8', fontSize: '15px', marginBottom: '10px' },
+  amountWrapper: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '40px' },
+  currencySymbol: { fontSize: '48px', fontWeight: '800', color: '#CBD5E1' },
+  modalInput: { width: '160px', fontSize: '72px', fontWeight: '900', border: 'none', outline: 'none', textAlign: 'left', color: '#1e293b' },
+  categoryLabelText: { fontSize: '15px', fontWeight: '700', color: '#94A3B8', marginBottom: '15px' },
+  categoryGrid: { display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '40px' },
+  catBtn: { padding: '12px 20px', borderRadius: '16px', border: 'none', fontSize: '15px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center' },
   saveBtnFull: { 
-    width: '100%', padding: '18px', backgroundColor: '#B2D8C8', color: '#2D6A4F', 
-    border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: '700' 
+    width: '100%', padding: '20px', backgroundColor: '#FFE680', color: '#475569', 
+    border: 'none', borderRadius: '24px', fontSize: '18px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
   }
 };
