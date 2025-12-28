@@ -77,7 +77,10 @@ export default function LandingPage({ onNavigate }) {
       </section>
 
       <footer style={{textAlign: 'center', padding: '40px', color: '#999', fontSize: '12px'}}>
-        Made with ❤️ for people who want to save more
+        Maal Tracker — Build better money habits   © 2025 Maal Tracker
+
+
+
       </footer>
     </div>
   );
