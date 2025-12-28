@@ -1,14 +1,16 @@
 import { useState } from 'react';
+import { useTrackerContext } from '../context/TrackerContext';
 
 export default function Plan() {
-  const [budget, setBudget] = useState(500); // Tusaale: $500 bishii
+  const [budget, setBudget] = useState(500);
+  const { formatAmount } = useTrackerContext();
   
   return (
     <div style={{ padding: '20px' }}>
       <h2>Financial Plan</h2>
       <div style={{ backgroundColor: '#000', color: '#fff', padding: '30px', borderRadius: '20px', marginTop: '20px' }}>
         <small style={{ color: '#aaa' }}>Monthly Budget Goal</small>
-        <h1 style={{ fontSize: '40px' }}>${budget}</h1>
+        <h1 style={{ fontSize: '40px' }}>{formatAmount(budget)}</h1>
         <input 
           type="range" min="100" max="5000" step="100" 
           value={budget} onChange={(e) => setBudget(e.target.value)}

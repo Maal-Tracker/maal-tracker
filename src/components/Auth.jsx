@@ -1,11 +1,14 @@
 // src/components/Auth.jsx
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showEmailInput, setShowEmailInput] = useState(false) // Si loo qariyo/muujiyo emailka
+  const navigate = useNavigate()
 
   // 1. Google Login Function
   const handleGoogleLogin = async () => {
@@ -19,18 +22,20 @@ export default function Auth() {
     }
   }
 
-  // 2. Email Magic Link Function
+  // 2. Email + Password Login Function
   const handleEmailLogin = async (event) => {
     event.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({ email })
-
-    if (error) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      // Successful sign in — auth state change in App.jsx will update session
+      navigate('/today')
+    } catch (error) {
       alert(error.error_description || error.message)
-    } else {
-      alert('Check your email for the login link!')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -110,37 +115,31 @@ export default function Auth() {
       ) : (
           // Foomka Emailka (Marka la riixo badhanka buluugga ah)
           <form onSubmit={handleEmailLogin}>
-            <div style={{ marginBottom: '15px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <input
                 type="email"
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ 
-                    width: '100%', 
-                    padding: '12px', 
-                    borderRadius: '8px', 
-                    border: '1px solid #ccc', 
-                    fontSize: '16px' 
-                }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+              />
+            </div>
+            <div style={{ marginBottom: '15px' }}>
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
               />
             </div>
             <button 
                 disabled={loading}
-                style={{ 
-                    width: '100%', 
-                    padding: '12px', 
-                    backgroundColor: '#3b5bdb', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '50px', 
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    opacity: loading ? 0.7 : 1
-                }}
+                style={{ width: '100%', padding: '12px', backgroundColor: '#3b5bdb', color: 'white', border: 'none', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', opacity: loading ? 0.7 : 1 }}
             >
-                {loading ? 'Sending Link...' : 'Send Magic Link'}
+                {loading ? 'Signing in...' : 'Sign in'}
             </button>
             <button 
                 type="button" 

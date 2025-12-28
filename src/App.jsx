@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { TrackerProvider } from './context/TrackerContext';
 
 // Components
 import LandingPage from './components/LandingPage';
+import Auth from './components/Auth';
 import AppLayout from './components/AppLayout';
 import Today from './components/Today';
 import Challenge from './components/Challenge'; // Faylka cusub ee Challenge
@@ -32,7 +34,7 @@ export default function App() {
       setIsGuest(true);
       navigate('/today'); 
     } else if (type === 'login') {
-      // Logic-ga Login-ka halkaan ayuu galayaa
+      navigate('/login');
     }
   };
 
@@ -45,22 +47,24 @@ export default function App() {
     navigate('/'); 
   };
 
+  // TrackerProvider will call useTracker(session) and provide tracker via context
+
   return (
     <div className="app-container">
+      <TrackerProvider session={session}>
       <Routes>
         {/* BOGGA HORE (LANDING PAGE) */}
         {!session && !isGuest ? (
-          <Route path="*" element={<LandingPage onNavigate={handleStartTracking} />} />
+          <>
+            <Route path="/login" element={<Auth />} />
+            <Route path="*" element={<LandingPage onNavigate={handleStartTracking} />} />
+          </>
         ) : (
           /* QAABKA GUDHA APP-KA (APP LAYOUT) */
           <Route element={<AppLayout onSignOut={handleSignOut} />}>
             {/* Si toos ah ugu gee Today marka uu soo galo */}
             <Route path="/" element={<Navigate to="/today" replace />} />
-            
-            {/* TODAY PAGE: Lama taaban design-kiisa iyo logic-giisa */}
             <Route path="/today" element={<Today session={session} isGuest={isGuest} />} />
-            
-            {/* CHALLENGE PAGE: Bogga cusub ee tababarka */}
             <Route path="/challenge" element={<Challenge session={session} isGuest={isGuest} />} />
             
             {/* Redirection haddii uu isku dayo bogag hore u jiray */}
@@ -70,6 +74,7 @@ export default function App() {
           </Route>
         )}
       </Routes>
+      </TrackerProvider>
     </div>
   );
 }

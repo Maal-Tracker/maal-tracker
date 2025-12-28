@@ -1,20 +1,19 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
+import { useTrackerContext } from '../context/TrackerContext';
 
-export default function Challenge() {
-  const [activeChallenge, setActiveChallenge] = useState(null); // '7day', '30day', or null
+export default function Challenge({ session }) {
+  const { 
+    transactions = [], 
+    totalSpentToday = 0, 
+    dailyLimit = 0, 
+    activeChallenge, setActiveChallenge,
+    sevenDayLimit, setSevenDayLimit,
+    step7, setStep7,
+    thirtyDayGoal, setThirtyDayGoal,
+    step30, setStep30
+  , formatAmount } = useTrackerContext();
 
-  // --- 7-DAY STATE ---
-  const [sevenDayLimit, setSevenDayLimit] = useState('');
-  const [step7, setStep7] = useState('start'); // 'start', 'input', 'active'
-  const currentDay = 3;
-  const spentToday = 22;
-
-  // --- 30-DAY STATE ---
-  const [thirtyDayGoal, setThirtyDayGoal] = useState('');
-  const [savedAmount, setSavedAmount] = useState(0);
-  const [step30, setStep30] = useState('start'); // 'start', 'input', 'active'
-
-  // --- HANDLERS 7-DAY ---
+  // --- HANDLERS ---
   const handleStart7Click = () => setStep7('input');
   
   const confirmStart7 = () => {
@@ -31,15 +30,14 @@ export default function Challenge() {
     }
   };
 
-  // --- HANDLERS 30-DAY ---
   const handleStart30Click = () => setStep30('input');
-
+  
   const confirmStart30 = () => {
-    if (!thirtyDayGoal || thirtyDayGoal <= 0) return alert("Please enter a saving goal.");
+    if (!thirtyDayGoal || thirtyDayGoal <= 0) return alert("Please enter a total monthly budget.");
     setActiveChallenge('30day');
     setStep30('active');
   };
-
+  
   const stop30 = () => {
     if(window.confirm("Stop 30-Day Challenge?")) {
       setActiveChallenge(null);
@@ -48,18 +46,154 @@ export default function Challenge() {
     }
   };
 
-  const renderSegments = () => {
-    return Array.from({ length: 7 }).map((_, i) => {
-      let color = '#E2E8F0'; 
-      if (i < currentDay) color = '#FFCF00'; 
+  // --- 7-DAY LOGIC (SMART START) ---
+  const sevenData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const last7DaysLimit = new Date(today);
+    last7DaysLimit.setDate(today.getDate() - 6);
+
+    const recentTx = transactions
+      .map(t => new Date(t.created_at))
+      .filter(d => d >= last7DaysLimit && d <= new Date())
+      .sort((a, b) => a - b);
+
+    let startDate = recentTx.length > 0 ? new Date(recentTx[0]) : new Date(today);
+    startDate.setHours(0,0,0,0);
+
+    const limit = Number(sevenDayLimit || dailyLimit || 0);
+    const todayTime = today.getTime();
+
+    const dayTotals = Array.from({ length: 7 }).map((_, i) => {
+      const currentDay = new Date(startDate);
+      currentDay.setDate(startDate.getDate() + i);
+      
+      const dStart = new Date(currentDay);
+      dStart.setHours(0, 0, 0, 0);
+      
+      const dEnd = new Date(currentDay);
+      dEnd.setHours(23, 59, 59, 999);
+      
+      const total = transactions
+        .filter(t => {
+          const dt = new Date(t.created_at);
+          return dt >= dStart && dt <= dEnd;
+        })
+        .reduce((s, t) => s + Number(t.amount), 0);
+      
+      let status = 'future'; 
+      if (currentDay.getTime() < todayTime) {
+        status = total > limit ? 'over' : 'under';
+      } else if (currentDay.getTime() === todayTime) {
+         status = 'today';
+      }
+
+      return { total, date: currentDay, status };
+    });
+
+    const currentDayIndex = dayTotals.findIndex(d => d.status === 'today');
+    const dayNumber = currentDayIndex !== -1 ? currentDayIndex + 1 : 1;
+
+    return { dayTotals, limit, dayNumber };
+  }, [transactions, sevenDayLimit, dailyLimit]);
+
+  // --- 30-DAY LOGIC (SMART START) ---
+  const thirtyData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Look back 30 days window
+    const last30DaysLimit = new Date(today);
+    last30DaysLimit.setDate(today.getDate() - 29);
+
+    const recentTx = transactions
+      .map(t => new Date(t.created_at))
+      .filter(d => d >= last30DaysLimit && d <= new Date())
+      .sort((a, b) => a - b);
+
+    let startDate = recentTx.length > 0 ? new Date(recentTx[0]) : new Date(today);
+    startDate.setHours(0,0,0,0);
+
+    // Calculate Daily Limit (Total Budget / 30)
+    const totalBudget = Number(thirtyDayGoal || 0);
+    const limit = totalBudget > 0 ? totalBudget / 30 : 0;
+    const todayTime = today.getTime();
+
+    const dayTotals = Array.from({ length: 30 }).map((_, i) => {
+      const currentDay = new Date(startDate);
+      currentDay.setDate(startDate.getDate() + i);
+      
+      const dStart = new Date(currentDay);
+      dStart.setHours(0, 0, 0, 0);
+      
+      const dEnd = new Date(currentDay);
+      dEnd.setHours(23, 59, 59, 999);
+      
+      const total = transactions
+        .filter(t => {
+          const dt = new Date(t.created_at);
+          return dt >= dStart && dt <= dEnd;
+        })
+        .reduce((s, t) => s + Number(t.amount), 0);
+      
+      let status = 'future'; 
+      if (currentDay.getTime() < todayTime) {
+        status = total > limit ? 'over' : 'under';
+      } else if (currentDay.getTime() === todayTime) {
+         status = 'today';
+      }
+
+      return { total, date: currentDay, status };
+    });
+
+    const currentDayIndex = dayTotals.findIndex(d => d.status === 'today');
+    const dayNumber = currentDayIndex !== -1 ? currentDayIndex + 1 : 1;
+
+    return { dayTotals, limit, dayNumber };
+  }, [transactions, thirtyDayGoal]);
+
+  // --- RENDER SEGMENTS HELPER ---
+  const renderSegments = (data, totalDays) => {
+    // Adjust margin based on count to fit in card
+    const margin = totalDays > 7 ? '0 1px' : '0 3px';
+    const borderRadius = totalDays > 7 ? '2px' : '4px';
+
+    return data.dayTotals.map((day, i) => {
+      let color = '#E2E8F0'; // Gray (Future)
+
+      if (day.status === 'over') color = '#EF4444'; // Red
+      if (day.status === 'under') color = '#FFCF00'; // Yellow
+      
+      // Today logic
+      if (day.status === 'today') {
+        const spent = Number(totalSpentToday.toFixed(2));
+        const limit = Number(data.limit.toFixed(2));
+        if (spent > limit) color = '#EF4444'; 
+        else color = '#FFCF00'; 
+      }
+
       return (
         <div key={i} style={{
-          flex: 1, height: '8px', backgroundColor: color, 
-          borderRadius: '4px', margin: '0 2px'
+          flex: 1, 
+          height: '8px', 
+          backgroundColor: color,
+          borderRadius: borderRadius, 
+          margin: margin,
         }}></div>
       );
     });
   };
+
+  const spentToday = Number(totalSpentToday || 0);
+  
+  // Helpers to get current active data
+  const isSevenActive = activeChallenge === '7day';
+  const isThirtyActive = activeChallenge === '30day';
+  
+  const currentLimit = isSevenActive ? sevenData.limit : (isThirtyActive ? thirtyData.limit : 0);
+  const remainingToday = currentLimit - spentToday;
+  const isOverToday = remainingToday < 0;
 
   return (
     <div style={styles.container}>
@@ -68,11 +202,21 @@ export default function Challenge() {
         <p style={styles.pageSub}>Train your money habits, one step at a time.</p>
       </div>
 
+      {activeChallenge && (
+         <div style={styles.activeBanner}>
+            <span style={{color: '#D97706'}}>✓</span>
+            <span style={{color: '#B45309', fontWeight: '600', marginLeft: '8px'}}>
+              {isSevenActive ? '7-Day' : '30-Day'} Challenge is active
+            </span>
+         </div>
+      )}
+
       {/* --- 7-DAY CHALLENGE CARD --- */}
       <div style={{
         ...styles.card,
-        opacity: activeChallenge === '30day' ? 0.5 : 1,
-        pointerEvents: activeChallenge === '30day' ? 'none' : 'auto'
+        opacity: isThirtyActive ? 0.5 : 1,
+        pointerEvents: isThirtyActive ? 'none' : 'auto',
+        border: isSevenActive ? '1px solid #FFCF00' : '1px solid #F1F5F9'
       }}>
         <div style={styles.cardHeader}>
           <div style={{...styles.iconCircle, backgroundColor: '#FFCF00', color: '#000'}}>⚡</div>
@@ -85,19 +229,16 @@ export default function Challenge() {
         {step7 === 'start' && (
           <>
             <div style={styles.infoBox}>
-              <strong>What you'll do:</strong><br/>
-              Set a daily spending limit and stay under it for 7 days. Simple!
+              Set a daily spending limit and stay under it for 7 days.
             </div>
-            <button onClick={handleStart7Click} style={styles.btnYellow}>Start 7-Day Challenge</button>
+            <button onClick={handleStart7Click} style={styles.btnYellow}>Start Challenge</button>
           </>
         )}
 
         {step7 === 'input' && (
           <div style={styles.inputContainer}>
-            <label style={styles.label}>What is your daily spending limit?</label>
-            <div style={styles.currencyInput}>
-              <span style={{fontSize: '24px', fontWeight: '700'}}>$</span>
-              <input 
+            <label style={styles.label}>Daily Limit</label>
+            <input 
                 type="number" 
                 value={sevenDayLimit}
                 onChange={(e) => setSevenDayLimit(e.target.value)}
@@ -105,9 +246,7 @@ export default function Challenge() {
                 style={styles.inputField}
                 autoFocus
               />
-            </div>
-            <button onClick={confirmStart7} style={styles.btnYellow}>Confirm & Start</button>
-            <button onClick={() => setStep7('start')} style={styles.btnLink}>Cancel</button>
+            <button onClick={confirmStart7} style={styles.btnYellow}>Start</button>
           </div>
         )}
 
@@ -115,26 +254,35 @@ export default function Challenge() {
           <div>
             <div style={styles.progressLabelRow}>
               <span>Your progress</span>
-              <strong>Day {currentDay} of 7</strong>
+              <strong style={{color: '#0F172A'}}>Day {sevenData.dayNumber} of 7</strong>
             </div>
+
             <div style={{display: 'flex', marginBottom: '24px'}}>
-              {renderSegments()}
+              {renderSegments(sevenData, 7)}
             </div>
-            <div style={styles.statsBox}>
+
+            <div style={styles.todayStatsBox}>
               <div style={styles.statRow}>
                 <span style={{color: '#64748B'}}>Today's limit</span>
-                <span style={{fontWeight: '700', color: '#0F172A'}}>${sevenDayLimit}</span>
+                <span style={{fontWeight: '700', color: '#0F172A'}}>{formatAmount(sevenData.limit, { maximumFractionDigits: 0 })}</span>
               </div>
-              <div style={styles.statRow}>
+              <div style={{...styles.statRow, marginTop: '8px'}}>
                 <span style={{color: '#64748B'}}>Spent today</span>
-                <span style={{fontWeight: '700', color: spentToday > sevenDayLimit ? '#EF4444' : '#0F172A'}}>${spentToday}</span>
+                <span style={{fontWeight: '700', color: isOverToday ? '#EF4444' : '#F59E0B'}}>{formatAmount(spentToday)}</span>
               </div>
-              <div style={styles.divider}></div>
-              <div style={styles.resultRow}>
-                 <span>✓ On track! ${sevenDayLimit - spentToday} left today</span>
+              
+              <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '14px', fontWeight: '600', color: isOverToday ? '#EF4444' : '#D97706'}}>
+                 {isOverToday 
+                   ? `⚠ You are over by ${formatAmount(Math.abs(remainingToday), { maximumFractionDigits: 0 })}` 
+                   : `✓ On track! ${formatAmount(remainingToday, { maximumFractionDigits: 0 })} left today`}
               </div>
             </div>
-            <button onClick={stop7} style={styles.btnStop}>Stop Challenge</button>
+
+            <div style={styles.nextStepText}>
+               What's next? Stay under {formatAmount(sevenData.limit, { maximumFractionDigits: 0 })} today to complete Day {sevenData.dayNumber}. You got this!
+            </div>
+            
+            <button onClick={stop7} style={styles.btnLinkRed}>Stop Challenge</button>
           </div>
         )}
       </div>
@@ -142,66 +290,78 @@ export default function Challenge() {
       {/* --- 30-DAY CHALLENGE CARD --- */}
       <div style={{
         ...styles.card,
-        opacity: activeChallenge === '7day' ? 0.5 : 1,
-        pointerEvents: activeChallenge === '7day' ? 'none' : 'auto'
+        opacity: isSevenActive ? 0.5 : 1,
+        pointerEvents: isSevenActive ? 'none' : 'auto',
+        border: isThirtyActive ? '1px solid #FFCF00' : '1px solid #F1F5F9'
       }}>
         <div style={styles.cardHeader}>
-          <div style={{...styles.iconCircle, backgroundColor: '#1E293B', color: '#FFF'}}>🎯</div>
+          <div style={{...styles.iconCircle, backgroundColor: '#F1F5F9', color: '#64748B'}}>◎</div>
           <div>
             <h3 style={styles.cardTitle}>30-Day Challenge</h3>
-            <p style={styles.cardSub}>Build a saving habit</p>
+            <p style={styles.cardSub}>Long-term budget control</p>
           </div>
         </div>
-
+        
         {step30 === 'start' && (
-           <>
-            <div style={styles.infoBox}>
-              <strong>What you'll do:</strong><br/>
-              Set a saving goal and track your progress for 30 days. Build the habit!
-            </div>
-            <button onClick={handleStart30Click} style={styles.btnBlack}>Start 30-Day Challenge</button>
-          </>
+            <>
+             <div style={styles.infoBox}>
+               Set a total monthly budget and track your daily spending for 30 days.
+             </div>
+             <button onClick={handleStart30Click} style={styles.btnOutline}>Start 30-Day</button>
+            </>
         )}
-
+        
         {step30 === 'input' && (
           <div style={styles.inputContainer}>
-            <label style={styles.label}>How much do you want to save?</label>
-            <div style={styles.currencyInput}>
-              <span style={{fontSize: '24px', fontWeight: '700'}}>$</span>
-              <input 
+             <label style={styles.label}>Total Monthly Budget</label>
+             <input 
                 type="number" 
                 value={thirtyDayGoal}
                 onChange={(e) => setThirtyDayGoal(e.target.value)}
-                placeholder="500"
+                placeholder="1500"
                 style={styles.inputField}
                 autoFocus
               />
-            </div>
-            <button onClick={confirmStart30} style={styles.btnBlack}>Confirm & Start</button>
-            <button onClick={() => setStep30('start')} style={styles.btnLink}>Cancel</button>
+            <button onClick={confirmStart30} style={styles.btnBlack}>Set Budget</button>
           </div>
         )}
-
+        
         {step30 === 'active' && (
-          <div>
+            <div>
+            {/* Progress Label Row */}
             <div style={styles.progressLabelRow}>
-              <span>Goal Progress</span>
-              <strong>0% done</strong>
+              <span>Your progress</span>
+              <strong style={{color: '#0F172A'}}>Day {thirtyData.dayNumber} of 30</strong>
             </div>
-            <div style={{height: '10px', backgroundColor: '#F1F5F9', borderRadius: '5px', marginBottom: '20px', overflow:'hidden'}}>
-               <div style={{width: '0%', height: '100%', backgroundColor: '#1E293B'}}></div>
+
+            {/* Bars (30 segments) */}
+            <div style={{display: 'flex', marginBottom: '24px'}}>
+              {renderSegments(thirtyData, 30)}
             </div>
-            <div style={{...styles.statsBox, backgroundColor: '#F8FAFC'}}>
-               <div style={styles.statRow}>
-                <span style={{color: '#64748B'}}>Total Goal</span>
-                <span style={{fontWeight: '700', color: '#0F172A'}}>${thirtyDayGoal}</span>
-              </div>
+
+            {/* Today Stats Box (Yellow/Beige Box) - Reused Logic */}
+            <div style={styles.todayStatsBox}>
               <div style={styles.statRow}>
-                <span style={{color: '#64748B'}}>Saved so far</span>
-                <span style={{fontWeight: '700', color: '#10B981'}}>$0</span>
+                <span style={{color: '#64748B'}}>Today's limit (Avg)</span>
+                <span style={{fontWeight: '700', color: '#0F172A'}}>{formatAmount(thirtyData.limit, { maximumFractionDigits: 0 })}</span>
+              </div>
+              <div style={{...styles.statRow, marginTop: '8px'}}>
+                <span style={{color: '#64748B'}}>Spent today</span>
+                <span style={{fontWeight: '700', color: isOverToday ? '#EF4444' : '#F59E0B'}}>{formatAmount(spentToday)}</span>
+              </div>
+              
+              <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '14px', fontWeight: '600', color: isOverToday ? '#EF4444' : '#D97706'}}>
+                 {isOverToday 
+                   ? `⚠ You are over by ${formatAmount(Math.abs(remainingToday), { maximumFractionDigits: 0 })}` 
+                   : `✓ On track! ${formatAmount(remainingToday, { maximumFractionDigits: 0 })} left today`}
               </div>
             </div>
-            <button onClick={stop30} style={styles.btnStop}>Stop Challenge</button>
+
+            <div style={styles.nextStepText}>
+               What's next? Stay under {formatAmount(thirtyData.limit, { maximumFractionDigits: 0 })} today to complete Day {thirtyData.dayNumber}. Keep going!
+            </div>
+            
+            <button onClick={stop30} style={styles.btnLinkRed}>Stop Challenge</button>
           </div>
         )}
       </div>
@@ -209,60 +369,33 @@ export default function Challenge() {
   );
 }
 
+// --- STYLES (Matching the Image) ---
 const styles = {
-  container: { 
-    padding: '24px', 
-    backgroundColor: '#FFFFFF', // Cadaanka cusub
-    minHeight: '100vh', 
-    maxWidth: '480px', 
-    margin: '0 auto', 
-    fontFamily: '-apple-system, system-ui, sans-serif' 
-  },
-  header: { textAlign: 'center', marginBottom: '30px', color: '#0F172A' },
-  pageTitle: { fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0' },
-  pageSub: { fontSize: '15px', color: '#64748B', margin: 0 },
-  card: { 
-    backgroundColor: '#fff', 
-    borderRadius: '24px', 
-    padding: '24px', 
-    marginBottom: '20px',
-    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    border: '1px solid #F1F5F9'
-  },
+  container: { padding: '24px', backgroundColor: '#FFFFFF', minHeight: '100vh', maxWidth: '480px', margin: '0 auto', fontFamily: 'sans-serif' },
+  header: { textAlign: 'center', marginBottom: '20px' },
+  pageTitle: { fontSize: '24px', fontWeight: '800', margin: '0 0 4px 0', color: '#0F172A' },
+  pageSub: { fontSize: '14px', color: '#64748B', margin: 0 },
+  activeBanner: { backgroundColor: '#FFFBEB', padding: '12px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', border: '1px solid #FEF3C7' },
+  
+  card: { backgroundColor: '#fff', borderRadius: '24px', padding: '24px', marginBottom: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #F1F5F9' },
   cardHeader: { display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '20px' },
-  iconCircle: { 
-    width: '48px', height: '48px', borderRadius: '50%', 
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 
-  },
-  cardTitle: { fontSize: '18px', fontWeight: '700', margin: '0 0 4px 0', color: '#0F172A' },
+  iconCircle: { width: '48px', height: '48px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 },
+  cardTitle: { fontSize: '17px', fontWeight: '700', margin: '0 0 2px 0', color: '#0F172A' },
   cardSub: { fontSize: '13px', color: '#64748B', margin: 0 },
-  infoBox: { 
-    backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '16px', 
-    fontSize: '14px', color: '#475569', lineHeight: '1.5', marginBottom: '24px' 
-  },
-  btnYellow: { 
-    width: '100%', padding: '16px', backgroundColor: '#FFCF00', color: '#000', 
-    border: 'none', borderRadius: '16px', fontWeight: '700', fontSize: '16px', cursor: 'pointer' 
-  },
-  btnBlack: { 
-    width: '100%', padding: '16px', backgroundColor: '#1E293B', color: '#FFF', 
-    border: 'none', borderRadius: '16px', fontWeight: '700', fontSize: '16px', cursor: 'pointer' 
-  },
-  btnStop: { 
-    width: '100%', padding: '12px', background: 'transparent', color: '#EF4444', 
-    border: '1px solid #FEE2E2', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', marginTop: '20px' 
-  },
-  btnLink: { background: 'none', border: 'none', color: '#94A3B8', marginTop: '12px', cursor: 'pointer', textDecoration: 'underline', fontSize: '14px' },
-  progressLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B', marginBottom: '10px' },
-  statsBox: { backgroundColor: '#FFFBEB', padding: '20px', borderRadius: '20px', marginBottom: '10px' }, 
-  statRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' },
-  divider: { height: '1px', backgroundColor: 'rgba(0,0,0,0.05)', margin: '12px 0' },
-  resultRow: { color: '#059669', fontWeight: '700', fontSize: '14px' },
-  inputContainer: { textAlign: 'center', padding: '10px 0' },
-  label: { display: 'block', fontSize: '14px', color: '#64748B', marginBottom: '15px' },
-  currencyInput: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' },
-  inputField: { 
-    fontSize: '36px', fontWeight: '800', width: '140px', border: 'none', 
-    borderBottom: '2px solid #E2E8F0', outline: 'none', textAlign: 'center', color: '#0F172A' 
-  }
+  
+  infoBox: { backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '12px', fontSize: '13px', color: '#475569', marginBottom: '16px' },
+  btnYellow: { width: '100%', padding: '14px', backgroundColor: '#FFCF00', color: '#000', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' },
+  btnOutline: { width: '100%', padding: '14px', backgroundColor: '#fff', color: '#0F172A', border: '1px solid #E2E8F0', borderRadius: '14px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' },
+  btnBlack: { width: '100%', padding: '14px', backgroundColor: '#0F172A', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: '700', fontSize: '15px', cursor: 'pointer' },
+  btnLinkRed: { background: 'none', border: 'none', color: '#EF4444', marginTop: '16px', cursor: 'pointer', fontSize: '13px', width: '100%', textAlign: 'center' },
+  
+  // UI Specifics for 7-Day Card
+  progressLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B', marginBottom: '12px', alignItems: 'center' },
+  todayStatsBox: { backgroundColor: '#FFFBEB', padding: '20px', borderRadius: '16px', marginBottom: '16px' }, 
+  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: '14px' },
+  nextStepText: { fontSize: '13px', color: '#64748B', lineHeight: '1.5', textAlign: 'center' },
+  
+  inputContainer: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  inputField: { fontSize: '24px', fontWeight: '700', padding: '10px', borderRadius: '12px', border: '1px solid #E2E8F0', textAlign: 'center', width: '100%', boxSizing: 'border-box' },
+  label: { fontSize: '13px', color: '#64748B', textAlign: 'center' }
 };

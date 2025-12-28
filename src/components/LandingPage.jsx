@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTrackerContext } from '../context/TrackerContext';
 
 export default function LandingPage({ onNavigate }) {
+  const { formatAmount } = useTrackerContext();
   return (
     <div style={styles.container}>
       {/* Header */}
@@ -33,10 +35,10 @@ export default function LandingPage({ onNavigate }) {
                 <div style={styles.mockupContent}>
                     <p style={{fontSize: '10px', color: '#999', textAlign: 'center'}}>Today</p>
                     <p style={{fontSize: '12px', color: '#999', textAlign: 'center'}}>Spent today</p>
-                    <h2 style={{margin: '5px 0', textAlign: 'center', fontSize: '28px'}}>$45</h2>
-                    <div style={styles.mockupItem}><span>🍱 Lunch</span> <span>$12</span></div>
-                    <div style={styles.mockupItem}><span>🚗 Uber</span> <span>$18</span></div>
-                    <div style={styles.mockupItem}><span>☕ Coffee</span> <span>$5</span></div>
+                    <h2 style={{margin: '5px 0', textAlign: 'center', fontSize: '28px'}}>{formatAmount(45)}</h2>
+                    <div style={styles.mockupItem}><span>🍱 Lunch</span> <span>{formatAmount(12)}</span></div>
+                    <div style={styles.mockupItem}><span>🚗 Uber</span> <span>{formatAmount(18)}</span></div>
+                    <div style={styles.mockupItem}><span>☕ Coffee</span> <span>{formatAmount(5)}</span></div>
                     <div style={styles.mockupButton}>+ Add expense</div>
                 </div>
             </div>

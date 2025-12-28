@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { useTrackerContext } from '../context/TrackerContext';
 
 export default function Today({ session, isGuest }) {
-  const [todayTotal, setTodayTotal] = useState(0);
-  const [transactions, setTransactions] = useState([]);
+  // SOURCE OF TRUTH: Hadda wax walba waxay ka imaanayaan Context
+    const { transactions, totalSpentToday, addExpense, formatAmount, currencySymbol } = useTrackerContext();
+  
+  // UI State kaliya (Modal & Inputs)
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food');
   
-  // Hubinta Mobile ama Desktop
+  // Mobile Check
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -27,47 +29,13 @@ export default function Today({ session, isGuest }) {
     { name: 'Other', icon: '📦' }
   ];
 
-  const fetchTodayData = async () => {
-    if (isGuest) return;
-    const today = new Date().toISOString().split('T')[0];
-    
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', session?.user?.id)
-      .eq('transaction_date', today)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setTransactions(data);
-      const total = data
-        .filter(t => t.transaction_type === 'Expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      setTodayTotal(total);
-    }
-  };
-
-  useEffect(() => { fetchTodayData(); }, [session, isGuest]);
-
   const handleSave = async (e) => {
     e.preventDefault();
     if (!amount) return;
 
-    const newTx = {
-      amount: parseFloat(amount),
-      transaction_type: 'Expense',
-      transaction_date: new Date().toISOString().split('T')[0],
-      description: category,
-      user_id: session?.user?.id
-    };
-
-    if (!isGuest) {
-      await supabase.from('transactions').insert([newTx]);
-      fetchTodayData();
-    } else {
-      setTransactions([{ ...newTx, created_at: new Date().toISOString() }, ...transactions]);
-      setTodayTotal(prev => prev + parseFloat(amount));
-    }
+    // Waxaan toos u wacaynaa function-ka Context-ka
+    // Context-ka ayaa go'aaminaya inuu DB aado ama Local State ku keydiyo
+    await addExpense(amount, category);
 
     setAmount('');
     setShowModal(false);
@@ -88,7 +56,8 @@ export default function Today({ session, isGuest }) {
       {/* Hero Spending Section */}
       <div style={styles.spendingDisplay}>
         <p style={styles.spentLabel}>Spent today</p>
-        <h1 style={styles.totalAmount}>${todayTotal}</h1>
+        {/* Halkan waxaan toos u isticmaalaynaa totalSpentToday ee Context-ka */}
+          <h1 style={styles.totalAmount}>{formatAmount(totalSpentToday, { maximumFractionDigits: 0 })}</h1>
       </div>
 
       {/* Add Expense Button (Desktop) */}
@@ -107,22 +76,27 @@ export default function Today({ session, isGuest }) {
 
       {/* Transactions List */}
       <div style={styles.listSection}>
-        {transactions.map((t, i) => (
-          <div key={i} style={styles.card}>
-            <div style={styles.cardLeft}>
-              <div style={styles.iconCircle}>
-                {categories.find(c => c.name === t.description)?.icon || '💰'}
+        {/* Liiska waxaa toos laga keenayaa Context-ka */}
+        {transactions && transactions.length > 0 ? (
+           transactions.map((t, i) => (
+            <div key={i} style={styles.card}>
+              <div style={styles.cardLeft}>
+                <div style={styles.iconCircle}>
+                  {categories.find(c => c.name === (t.category || t.description))?.icon || '💰'}
+                </div>
+                <div>
+                  <p style={styles.catName}>{t.category || t.description}</p>
+                  <p style={styles.timeText}>
+                    {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p style={styles.catName}>{t.description}</p>
-                <p style={styles.timeText}>
-                  {new Date(t.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
+              <p style={styles.cardAmount}>{formatAmount(t.amount)}</p>
             </div>
-            <p style={styles.cardAmount}>${t.amount}</p>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p style={{textAlign:'center', color:'#ccc', marginTop:'20px'}}>No expenses yet.</p>
+        )}
       </div>
 
       {/* Modern Modal (Add Expense) */}
@@ -137,7 +111,7 @@ export default function Today({ session, isGuest }) {
             <p style={styles.inputLabel}>How much did you spend?</p>
             
             <div style={styles.amountWrapper}>
-              <span style={styles.currencySymbol}>$</span>
+              <span style={styles.currencySymbol}>{currencySymbol}</span>
               <input 
                 type="number" 
                 placeholder="0" 
@@ -156,7 +130,7 @@ export default function Today({ session, isGuest }) {
                   onClick={() => setCategory(cat.name)}
                   style={{
                     ...styles.catBtn, 
-                    backgroundColor: category === cat.name ? '#FFCC00' : '#F1F5F9', // Jaallo marka la doorto
+                    backgroundColor: category === cat.name ? '#FFCC00' : '#F1F5F9',
                     color: '#1E293B'
                   }}
                 >
