@@ -9,6 +9,8 @@ import {
 const TrackerContext = createContext(null);
 
 export function TrackerProvider({ session, children }) {
+  // consider a session valid only if it has expected fields
+  const isValidSession = Boolean(session && session.user && session.access_token);
   /* ===============================
      1. DATABASE (LOGGED-IN USERS)
      =============================== */
@@ -18,7 +20,7 @@ export function TrackerProvider({ session, children }) {
     addExpense: addDbExpense,
     dailyLimit,
     loading
-  } = useTracker(session);
+  } = useTracker(isValidSession ? session : null);
 
   /* ===============================
      2. GUEST TRANSACTIONS (LOCAL)
@@ -40,7 +42,7 @@ export function TrackerProvider({ session, children }) {
   // persist guest data
   useEffect(() => {
     if (!isClient) return;
-    if (!session) {
+    if (!isValidSession) {
       try {
         localStorage.setItem(
           'guest_transactions',
@@ -48,18 +50,18 @@ export function TrackerProvider({ session, children }) {
         );
       } catch {}
     }
-  }, [guestTransactions, session, isClient]);
+  }, [guestTransactions, isValidSession, isClient]);
 
   // marka user login sameeyo → nadiifi guest
   useEffect(() => {
     if (!isClient) return;
-    if (session) {
+    if (isValidSession) {
       setGuestTransactions([]);
       try {
         localStorage.removeItem('guest_transactions');
       } catch {}
     }
-  }, [session, isClient]);
+  }, [isValidSession, isClient]);
 
   /* ===============================
      3. CHALLENGE STATE (GLOBAL)
@@ -92,11 +94,11 @@ export function TrackerProvider({ session, children }) {
   /* ===============================
      5. ACTIVE SOURCE (GUEST vs USER)
      =============================== */
-  const activeTransactions = session ? dbTransactions : (isClient ? guestTransactions : []);
+  const activeTransactions = isValidSession ? dbTransactions : (isClient ? guestTransactions : []);
 
   // spent today (works for both) — guard guest logic until client mount
   const totalSpentToday = useMemo(() => {
-    if (session) return dbTotal;
+    if (isValidSession) return dbTotal;
     if (!isClient) return 0;
 
     const start = new Date();
@@ -110,7 +112,7 @@ export function TrackerProvider({ session, children }) {
         return d >= start && d <= end && (t.type || 'expense') === 'expense';
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  }, [guestTransactions, dbTotal, session, isClient]);
+  }, [guestTransactions, dbTotal, isValidSession, isClient]);
 
   /* ===============================
      6. ADD EXPENSE (SAFE)
@@ -118,7 +120,7 @@ export function TrackerProvider({ session, children }) {
   const addExpense = async (amount, category) => {
     if (!amount) return;
 
-    if (session) {
+    if (isValidSession) {
       // logged-in → Supabase
       await addDbExpense(amount, category);
     } else {
