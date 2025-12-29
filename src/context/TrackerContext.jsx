@@ -23,32 +23,43 @@ export function TrackerProvider({ session, children }) {
   /* ===============================
      2. GUEST TRANSACTIONS (LOCAL)
      =============================== */
-  const [guestTransactions, setGuestTransactions] = useState(() => {
+  const [guestTransactions, setGuestTransactions] = useState([]);
+  const [isClient, setIsClient] = useState(false);
+
+  // Load guest data only on client to avoid SSR/localStorage issues
+  useEffect(() => {
+    setIsClient(true);
     try {
       const saved = localStorage.getItem('guest_transactions');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) setGuestTransactions(JSON.parse(saved));
     } catch {
-      return [];
+      // ignore
     }
-  });
+  }, []);
 
   // persist guest data
   useEffect(() => {
+    if (!isClient) return;
     if (!session) {
-      localStorage.setItem(
-        'guest_transactions',
-        JSON.stringify(guestTransactions)
-      );
+      try {
+        localStorage.setItem(
+          'guest_transactions',
+          JSON.stringify(guestTransactions)
+        );
+      } catch {}
     }
-  }, [guestTransactions, session]);
+  }, [guestTransactions, session, isClient]);
 
   // marka user login sameeyo → nadiifi guest
   useEffect(() => {
+    if (!isClient) return;
     if (session) {
       setGuestTransactions([]);
-      localStorage.removeItem('guest_transactions');
+      try {
+        localStorage.removeItem('guest_transactions');
+      } catch {}
     }
-  }, [session]);
+  }, [session, isClient]);
 
   /* ===============================
      3. CHALLENGE STATE (GLOBAL)
@@ -81,11 +92,12 @@ export function TrackerProvider({ session, children }) {
   /* ===============================
      5. ACTIVE SOURCE (GUEST vs USER)
      =============================== */
-  const activeTransactions = session ? dbTransactions : guestTransactions;
+  const activeTransactions = session ? dbTransactions : (isClient ? guestTransactions : []);
 
-  // spent today (works for both)
+  // spent today (works for both) — guard guest logic until client mount
   const totalSpentToday = useMemo(() => {
     if (session) return dbTotal;
+    if (!isClient) return 0;
 
     const start = new Date();
     start.setHours(0, 0, 0, 0);
@@ -95,10 +107,10 @@ export function TrackerProvider({ session, children }) {
     return guestTransactions
       .filter(t => {
         const d = new Date(t.created_at);
-        return d >= start && d <= end && t.type === 'expense';
+        return d >= start && d <= end && (t.type || 'expense') === 'expense';
       })
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  }, [guestTransactions, dbTotal, session]);
+  }, [guestTransactions, dbTotal, session, isClient]);
 
   /* ===============================
      6. ADD EXPENSE (SAFE)
