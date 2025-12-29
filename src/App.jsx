@@ -13,21 +13,30 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
 
-  useEffect(() => {
-    // HELPER: Only accept session if it has a user and a token
-    const validateSession = (s) => {
-      if (s && s.user && s.access_token) {
-        return s;
-      }
-      return null;
-    };
+  // HELPER: Wuxuu hubinayaa in session-ku uu yahay mid dhameystiran
+  // Haddii token ama user la waayo, wuxuu ku qasbayaa NULL (Guest Mode)
+  const validateSession = (s) => {
+    if (s && s.user && s.access_token) {
+      return s;
+    }
+    return null;
+  };
 
-    // 1. Check active session on load
+  useEffect(() => {
+    // 1. Check initial session
     supabase.auth.getSession().then(({ data }) => {
-      setSession(validateSession(data.session));
+      const validSession = validateSession(data.session);
+      
+      if (data.session && !validSession) {
+        // Haddii session jiro laakiin uu invalid yahay (Stale), nadiifi
+        console.warn('Stale session detected, forcing Guest mode');
+        supabase.auth.signOut(); 
+      }
+      
+      setSession(validSession);
     });
 
-    // 2. Listen for auth changes
+    // 2. Listen for auth changes (Login, Logout, Token Refresh)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(validateSession(session));
