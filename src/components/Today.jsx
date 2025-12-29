@@ -10,11 +10,13 @@ export default function Today({ session, isGuest }) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food');
   
-  // Mobile Check
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  // Mobile Check (SSR-safe: initialize on mount)
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    // set initial value on client
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
