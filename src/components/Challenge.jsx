@@ -55,6 +55,7 @@ export default function Challenge({ session }) {
     last7DaysLimit.setDate(today.getDate() - 6);
 
     const recentTx = transactions
+      .filter(t => (t.type || 'expense') === 'expense')
       .map(t => new Date(t.created_at))
       .filter(d => d >= last7DaysLimit && d <= new Date())
       .sort((a, b) => a - b);
@@ -77,6 +78,7 @@ export default function Challenge({ session }) {
       
       const total = transactions
         .filter(t => {
+          if ((t.type || 'expense') !== 'expense') return false;
           const dt = new Date(t.created_at);
           return dt >= dStart && dt <= dEnd;
         })
@@ -108,6 +110,7 @@ export default function Challenge({ session }) {
     last30DaysLimit.setDate(today.getDate() - 29);
 
     const recentTx = transactions
+      .filter(t => (t.type || 'expense') === 'expense')
       .map(t => new Date(t.created_at))
       .filter(d => d >= last30DaysLimit && d <= new Date())
       .sort((a, b) => a - b);
@@ -132,6 +135,7 @@ export default function Challenge({ session }) {
       
       const total = transactions
         .filter(t => {
+          if ((t.type || 'expense') !== 'expense') return false;
           const dt = new Date(t.created_at);
           return dt >= dStart && dt <= dEnd;
         })
