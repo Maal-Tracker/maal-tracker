@@ -15,11 +15,27 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+      const s = data.session;
+      const isValidSession = Boolean(s && s.user && s.access_token);
+      console.log('[AUTH DEBUG] getSession raw session:', s);
+      console.log('[AUTH DEBUG]', isValidSession ? 'valid session' : 'invalid / stale session → treating as guest', isValidSession);
+      if (s && (!s.user || !s.access_token)) {
+        console.warn('[AUTH DEBUG] invalid / stale session → treating as guest');
+      }
+      setSession(s);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => setSession(session)
+      (event, session) => {
+        const isValidSession = Boolean(session && session.user && session.access_token);
+        console.log('[AUTH DEBUG] onAuthStateChange event:', event);
+        console.log('[AUTH DEBUG] session:', session);
+        console.log('[AUTH DEBUG]', isValidSession ? 'valid session' : 'invalid / stale session → treating as guest', isValidSession);
+        if (session && (!session.user || !session.access_token)) {
+          console.warn('[AUTH DEBUG] invalid / stale session → treating as guest');
+        }
+        setSession(session);
+      }
     );
 
     return () => listener.subscription.unsubscribe();
