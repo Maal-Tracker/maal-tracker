@@ -1,70 +1,120 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useTracker } from '../hooks/useTracker';
-import { formatCurrency, getCurrencySymbol, AVAILABLE_CURRENCIES } from '../utils/formatCurrency';
+import {
+  formatCurrency,
+  getCurrencySymbol,
+  AVAILABLE_CURRENCIES
+} from '../utils/formatCurrency';
 
 const TrackerContext = createContext(null);
 
 export function TrackerProvider({ session, children }) {
-  // 1. Hel xogta Database-ka (Transactions logic)
-  const { 
-    transactions: dbTransactions, 
-    totalSpentToday: dbTotal, 
-    addExpense: addDbExpense, 
-    dailyLimit, 
-    loading 
+  /* ===============================
+     1. DATABASE (LOGGED-IN USERS)
+     =============================== */
+  const {
+    transactions: dbTransactions = [],
+    totalSpentToday: dbTotal = 0,
+    addExpense: addDbExpense,
+    dailyLimit,
+    loading
   } = useTracker(session);
 
-  // 2. Guest Transactions State
-  const [guestTransactions, setGuestTransactions] = useState([]);
+  /* ===============================
+     2. GUEST TRANSACTIONS (LOCAL)
+     =============================== */
+  const [guestTransactions, setGuestTransactions] = useState(() => {
+    try {
+      const saved = localStorage.getItem('guest_transactions');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  // 3. CHALLENGE STATE (Halkan ayaan kusoo darnay si ay u persist-gareyso)
-  const [activeChallenge, setActiveChallenge] = useState(null); // '7day', '30day', or null
-  
-  // 7-Day Challenge State
+  // persist guest data
+  useEffect(() => {
+    if (!session) {
+      localStorage.setItem(
+        'guest_transactions',
+        JSON.stringify(guestTransactions)
+      );
+    }
+  }, [guestTransactions, session]);
+
+  // marka user login sameeyo → nadiifi guest
+  useEffect(() => {
+    if (session) {
+      setGuestTransactions([]);
+      localStorage.removeItem('guest_transactions');
+    }
+  }, [session]);
+
+  /* ===============================
+     3. CHALLENGE STATE (GLOBAL)
+     =============================== */
+  const [activeChallenge, setActiveChallenge] = useState(null); // '7day' | '30day' | null
+
+  // 7-Day
   const [sevenDayLimit, setSevenDayLimit] = useState('');
-  const [step7, setStep7] = useState('start'); // 'start', 'input', 'active'
+  const [step7, setStep7] = useState('start'); // start | input | active
 
-  // 30-Day Challenge State
+  // 30-Day
   const [thirtyDayGoal, setThirtyDayGoal] = useState('');
-  const [step30, setStep30] = useState('start'); // 'start', 'input', 'active'
+  const [step30, setStep30] = useState('start'); // start | input | active
 
-  // 4. Currency (global, persisted)
+  /* ===============================
+     4. CURRENCY (GLOBAL + PERSIST)
+     =============================== */
   const [currency, setCurrency] = useState(() => {
     try {
       return localStorage.getItem('currency') || 'USD';
-    } catch (e) {
+    } catch {
       return 'USD';
     }
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('currency', currency);
-    } catch (e) {}
+    localStorage.setItem('currency', currency);
   }, [currency]);
 
-  // Nadiifi Guest data marka user-ku soo galo
-  useEffect(() => {
-    if (session) {
-      setGuestTransactions([]);
-    }
-  }, [session]);
-
-  // Xisaabi wadarta Guest-ka
-  const guestTotal = guestTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-
-  // Go'aami xogta la isticmaalayo
+  /* ===============================
+     5. ACTIVE SOURCE (GUEST vs USER)
+     =============================== */
   const activeTransactions = session ? dbTransactions : guestTransactions;
-  const activeTotal = session ? dbTotal : guestTotal;
 
-  // Add Expense Function
+  // spent today (works for both)
+  const totalSpentToday = useMemo(() => {
+    if (session) return dbTotal;
+
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    return guestTransactions
+      .filter(t => {
+        const d = new Date(t.created_at);
+        return d >= start && d <= end && t.type === 'expense';
+      })
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  }, [guestTransactions, dbTotal, session]);
+
+  /* ===============================
+     6. ADD EXPENSE (SAFE)
+     =============================== */
   const addExpense = async (amount, category) => {
+    if (!amount) return;
+
     if (session) {
+      // logged-in → Supabase
       await addDbExpense(amount, category);
     } else {
+      // guest → local only
       const newTx = {
-        amount: parseFloat(amount),
-        category: category,
+        id: crypto.randomUUID(),
+        amount: Number(amount),
+        category,
         description: category,
         created_at: new Date().toISOString(),
         type: 'expense'
@@ -73,28 +123,43 @@ export function TrackerProvider({ session, children }) {
     }
   };
 
-  // Currency helpers exposed to components
-  const formatAmount = (amount, opts = {}) => formatCurrency(amount, currency, opts);
-  const currencySymbol = getCurrencySymbol(currency);
-  const availableCurrencies = AVAILABLE_CURRENCIES;
+  /* ===============================
+     7. CURRENCY HELPERS
+     =============================== */
+  const formatAmount = (amount, opts = {}) =>
+    formatCurrency(amount, currency, opts);
 
+  const currencySymbol = getCurrencySymbol(currency);
+
+  /* ===============================
+     8. CONTEXT VALUE
+     =============================== */
   const value = {
-    // Transaction Data
+    // transactions
     transactions: activeTransactions,
-    totalSpentToday: activeTotal,
+    totalSpentToday,
     addExpense,
     dailyLimit,
     loading,
 
-    // Challenge Data (Exposed to Challenge.jsx)
-    activeChallenge, setActiveChallenge,
-    sevenDayLimit, setSevenDayLimit,
-    step7, setStep7,
-    thirtyDayGoal, setThirtyDayGoal,
-    step30, setStep30
-    ,
-    // Currency
-    currency, setCurrency, formatAmount, currencySymbol, availableCurrencies
+    // challenge
+    activeChallenge,
+    setActiveChallenge,
+    sevenDayLimit,
+    setSevenDayLimit,
+    step7,
+    setStep7,
+    thirtyDayGoal,
+    setThirtyDayGoal,
+    step30,
+    setStep30,
+
+    // currency
+    currency,
+    setCurrency,
+    formatAmount,
+    currencySymbol,
+    availableCurrencies: AVAILABLE_CURRENCIES
   };
 
   return (
