@@ -14,27 +14,23 @@ export default function App() {
   const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const s = data.session;
-      const isValidSession = Boolean(s && s.user && s.access_token);
-      console.log('[AUTH DEBUG] getSession raw session:', s);
-      console.log('[AUTH DEBUG]', isValidSession ? 'valid session' : 'invalid / stale session → treating as guest', isValidSession);
-      if (s && (!s.user || !s.access_token)) {
-        console.warn('[AUTH DEBUG] invalid / stale session → treating as guest');
+    // HELPER: Only accept session if it has a user and a token
+    const validateSession = (s) => {
+      if (s && s.user && s.access_token) {
+        return s;
       }
-      setSession(s);
+      return null;
+    };
+
+    // 1. Check active session on load
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(validateSession(data.session));
     });
 
+    // 2. Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        const isValidSession = Boolean(session && session.user && session.access_token);
-        console.log('[AUTH DEBUG] onAuthStateChange event:', event);
-        console.log('[AUTH DEBUG] session:', session);
-        console.log('[AUTH DEBUG]', isValidSession ? 'valid session' : 'invalid / stale session → treating as guest', isValidSession);
-        if (session && (!session.user || !session.access_token)) {
-          console.warn('[AUTH DEBUG] invalid / stale session → treating as guest');
-        }
-        setSession(session);
+      (_event, session) => {
+        setSession(validateSession(session));
       }
     );
 
