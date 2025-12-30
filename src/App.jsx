@@ -13,33 +13,31 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
 
-  // HELPER: Wuxuu hubinayaa in session-ku uu yahay mid dhameystiran
-  // Haddii token ama user la waayo, wuxuu ku qasbayaa NULL (Guest Mode)
+  // Session validation (protect against stale/broken sessions)
   const validateSession = (s) => {
-    if (s && s.user && s.access_token) {
-      return s;
-    }
-    return null;
+    return s && s.user && s.access_token ? s : null;
   };
 
   useEffect(() => {
-    // 1. Check initial session
+    // 1. Initial session check
     supabase.auth.getSession().then(({ data }) => {
       const validSession = validateSession(data.session);
-      
+
       if (data.session && !validSession) {
-        // Haddii session jiro laakiin uu invalid yahay (Stale), nadiifi
-        console.warn('Stale session detected, forcing Guest mode');
-        supabase.auth.signOut(); 
+        // stale session → force logout
+        supabase.auth.signOut();
       }
-      
+
       setSession(validSession);
+      if (!validSession) setIsGuest(true);
     });
 
-    // 2. Listen for auth changes (Login, Logout, Token Refresh)
+    // 2. Auth state changes (login / logout / refresh)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setSession(validateSession(session));
+        const validSession = validateSession(session);
+        setSession(validSession);
+        if (!validSession) setIsGuest(true);
       }
     );
 
@@ -60,7 +58,7 @@ export default function App() {
     <TrackerProvider session={session}>
       <Routes>
 
-        {/* LANDING PAGE */}
+        {/* LANDING */}
         <Route
           path="/"
           element={
@@ -80,7 +78,7 @@ export default function App() {
           }
         />
 
-        {/* APP PAGES */}
+        {/* APP */}
         <Route element={<AppLayout onSignOut={handleSignOut} />}>
           <Route
             path="/today"
