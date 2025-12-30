@@ -1,4 +1,3 @@
-// src/components/Auth.jsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
@@ -7,32 +6,44 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showEmailInput, setShowEmailInput] = useState(false) // Si loo qariyo/muujiyo emailka
+  const [showEmailInput, setShowEmailInput] = useState(false) 
   const navigate = useNavigate()
 
-  // 1. Google Login Function
+  // 1. Google Login - Waxaan ku darnay redirectTo si uu Vercel ugu shaqeeyo
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          // Tani waxay hubinaysaa in qofka lagu soo celiyo domain-ka uu hadda joogo
+          redirectTo: window.location.origin,
+        }
       })
       if (error) throw error
     } catch (error) {
-      alert('Error logging in with Google: ' + error.message)
+      alert('Error: ' + error.message)
     }
   }
 
-  // 2. Email + Password Login Function
+  // 2. Email Login
   const handleEmailLogin = async (event) => {
     event.preventDefault()
     setLoading(true)
     try {
+      // Isku day login
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-      // Successful sign in — auth state change in App.jsx will update session
-      navigate('/today')
+      
+      if (error) {
+        // Haddii login la waayo, isku day Signup (User cusub)
+        const { error: signUpError } = await supabase.auth.signUp({ email, password })
+        if (signUpError) throw signUpError
+        alert('Check your email for confirmation link!')
+      } else {
+        // Haddii login guuleysto
+        navigate('/today')
+      }
     } catch (error) {
-      alert(error.error_description || error.message)
+      alert(error.message)
     } finally {
       setLoading(false)
     }
@@ -50,7 +61,7 @@ export default function Auth() {
       fontFamily: 'Arial, sans-serif'
     }}>
       
-      <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>Log in or Sign up</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>Maal Tracker Login</h2>
 
       {/* --- GOOGLE BUTTON --- */}
       <button
@@ -60,7 +71,7 @@ export default function Auth() {
           padding: '12px',
           backgroundColor: 'white',
           border: '1px solid #ccc',
-          borderRadius: '50px', // Qaab wareegsan (Pill shape)
+          borderRadius: '50px',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -70,12 +81,9 @@ export default function Auth() {
           fontWeight: 'bold',
           color: '#333',
           marginBottom: '20px',
-          transition: 'background 0.2s'
+          transition: '0.2s'
         }}
-        onMouseOver={(e) => e.target.style.backgroundColor = '#f9f9f9'}
-        onMouseOut={(e) => e.target.style.backgroundColor = 'white'}
       >
-        {/* Google Icon SVG */}
         <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
             <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
@@ -85,23 +93,21 @@ export default function Auth() {
         Continue with Google
       </button>
 
-      {/* --- DIVIDER (OR) --- */}
+      {/* --- DIVIDER --- */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ flex: 1, height: '1px', backgroundColor: '#e0e0e0' }}></div>
         <span style={{ padding: '0 10px', color: '#888', fontSize: '14px' }}>OR</span>
         <div style={{ flex: 1, height: '1px', backgroundColor: '#e0e0e0' }}></div>
       </div>
 
-      {/* --- EMAIL SECTION --- */}
-      
+      {/* --- EMAIL FORM --- */}
       {!showEmailInput ? (
-          // Badhanka Buluugga ah (Initial State)
           <button 
             onClick={() => setShowEmailInput(true)}
             style={{
                 width: '100%',
                 padding: '12px',
-                backgroundColor: '#3b5bdb', // Blue color like image
+                backgroundColor: '#3b5bdb',
                 color: 'white',
                 border: 'none',
                 borderRadius: '50px',
@@ -113,7 +119,6 @@ export default function Auth() {
             Continue with Email
           </button>
       ) : (
-          // Foomka Emailka (Marka la riixo badhanka buluugga ah)
           <form onSubmit={handleEmailLogin}>
             <div style={{ marginBottom: '12px' }}>
               <input
@@ -122,7 +127,7 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}
               />
             </div>
             <div style={{ marginBottom: '15px' }}>
@@ -132,14 +137,14 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}
               />
             </div>
             <button 
                 disabled={loading}
                 style={{ width: '100%', padding: '12px', backgroundColor: '#3b5bdb', color: 'white', border: 'none', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', opacity: loading ? 0.7 : 1 }}
             >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Processing...' : 'Sign In / Sign Up'}
             </button>
             <button 
                 type="button" 
@@ -150,12 +155,6 @@ export default function Auth() {
             </button>
           </form>
       )}
-
-      {/* Footer Text */}
-      <p style={{ textAlign: 'center', marginTop: '30px', fontSize: '14px', color: '#666' }}>
-        Already have an account? <span onClick={() => setShowEmailInput(true)} style={{ color: '#3b5bdb', cursor: 'pointer', fontWeight: 'bold' }}>Log in</span>
-      </p>
-
     </div>
   )
 }
